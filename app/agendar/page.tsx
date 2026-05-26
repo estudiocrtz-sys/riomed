@@ -1,0 +1,383 @@
+'use client'
+
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { AppShell } from '@/components/layout/AppShell'
+import { Header } from '@/components/layout/Header'
+import { Button } from '@/components/ui/Button'
+import { specialties, getSpecialtyById } from '@/data/specialties'
+import { doctors, getDoctorsBySpecialty, getDoctorById } from '@/data/doctors'
+import { units, getUnitById } from '@/data/units'
+import {
+  Check, ChevronRight, Star, MapPin, Clock, Calendar,
+  CheckCircle2, PartyPopper,
+} from 'lucide-react'
+
+type Step = 1 | 2 | 3 | 4 | 5 | 6
+
+const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+function generateDates() {
+  const dates = []
+  const today = new Date(2024, 4, 26) // 26/05/2024
+  for (let i = 1; i <= 30; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    if (d.getDay() !== 0) dates.push(d) // skip Sunday
+  }
+  return dates
+}
+
+const availableDates = generateDates()
+
+const stepLabels = ['Especialidade', 'Médico', 'Unidade', 'Data', 'Horário', 'Confirmação']
+
+function BookingContent() {
+  const searchParams = useSearchParams()
+  const [step, setStep] = useState<Step>(1)
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(searchParams.get('specialty'))
+  const [selectedDoctor, setSelectedDoctor] = useState<string | null>(searchParams.get('doctor'))
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(searchParams.get('unit'))
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [confirmed, setConfirmed] = useState(false)
+  const [specialtySearch, setSpecialtySearch] = useState('')
+
+  // Auto-advance from URL params
+  useEffect(() => {
+    const doc = searchParams.get('doctor')
+    const sp = searchParams.get('specialty')
+    const unit = searchParams.get('unit')
+    if (doc) {
+      const d = getDoctorById(doc)
+      if (d) { setSelectedSpecialty(d.specialtyId); setSelectedDoctor(doc); setStep(3) }
+    } else if (unit) {
+      setSelectedUnit(unit); setStep(2)
+    } else if (sp) {
+      setSelectedSpecialty(sp); setStep(2)
+    }
+  }, [])
+
+  const filteredSpecialties = specialties.filter((s) =>
+    s.name.toLowerCase().includes(specialtySearch.toLowerCase())
+  )
+
+  const availableDoctors = selectedSpecialty
+    ? getDoctorsBySpecialty(selectedSpecialty)
+    : doctors
+
+  const doctor = selectedDoctor ? getDoctorById(selectedDoctor) : null
+  const specialty = selectedSpecialty ? getSpecialtyById(selectedSpecialty) : null
+  const unit = selectedUnit ? getUnitById(selectedUnit) : null
+
+  const availableUnits = selectedDoctor
+    ? units.filter((u) => doctor?.unitIds.includes(u.id))
+    : units
+
+  if (confirmed) {
+    return (
+      <AppShell>
+        <Header title="Agendar Consulta" />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="bg-white rounded-3xl border border-[#E8EDE9] p-12 max-w-md w-full text-center shadow-lg">
+            <div className="w-20 h-20 rounded-full bg-[#2CC295]/10 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-[#2CC295]" />
+            </div>
+            <h2 className="text-2xl font-bold text-[#000F11] mb-2">Consulta Agendada!</h2>
+            <p className="text-[#8A9390] mb-6">
+              Sua consulta foi agendada com sucesso. Você receberá um lembrete por e-mail e SMS.
+            </p>
+            <div className="bg-[#F7F6F6] rounded-2xl p-4 text-left space-y-2 mb-6">
+              <p className="text-sm"><span className="text-[#8A9390]">Médico:</span> <span className="font-semibold text-[#000F11]">{doctor?.name}</span></p>
+              <p className="text-sm"><span className="text-[#8A9390]">Especialidade:</span> <span className="font-semibold text-[#000F11]">{specialty?.name}</span></p>
+              <p className="text-sm"><span className="text-[#8A9390]">Unidade:</span> <span className="font-semibold text-[#000F11]">{unit?.name}</span></p>
+              <p className="text-sm"><span className="text-[#8A9390]">Data:</span> <span className="font-semibold text-[#000F11]">{selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</span></p>
+              <p className="text-sm"><span className="text-[#8A9390]">Horário:</span> <span className="font-semibold text-[#000F11]">{selectedTime}</span></p>
+            </div>
+            <div className="flex gap-3">
+              <a href="/minhas-consultas" className="flex-1">
+                <Button variant="outline" className="w-full">Ver minhas consultas</Button>
+              </a>
+              <a href="/inicio" className="flex-1">
+                <Button className="w-full">Ir para o início</Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    )
+  }
+
+  return (
+    <AppShell>
+      <Header title="Agendar Consulta" subtitle="Escolha as opções abaixo para agendar sua consulta" />
+
+      <div className="flex-1 p-8">
+        {/* Steps indicator */}
+        <div className="flex items-center gap-0 mb-8">
+          {stepLabels.map((label, i) => {
+            const n = (i + 1) as Step
+            const done = n < step
+            const active = n === step
+            return (
+              <div key={n} className="flex items-center flex-1 last:flex-none">
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                    done ? 'bg-[#2CC295] text-[#000F11]' :
+                    active ? 'bg-[#03624C] text-white ring-4 ring-[#2CC295]/20' :
+                    'bg-white border-2 border-[#D0DDD6] text-[#8A9390]'
+                  }`}>
+                    {done ? <Check className="w-4 h-4" /> : n}
+                  </div>
+                  <span className={`text-[10px] font-medium mt-1 whitespace-nowrap ${active ? 'text-[#03624C]' : done ? 'text-[#2CC295]' : 'text-[#8A9390]'}`}>
+                    {label}
+                  </span>
+                </div>
+                {i < stepLabels.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-2 mb-4 ${done ? 'bg-[#2CC295]' : 'bg-[#D0DDD6]'}`} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Step 1: Specialty */}
+        {step === 1 && (
+          <div>
+            <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a especialidade</h2>
+            <p className="text-sm text-[#8A9390] mb-5">Selecione a especialidade médica que você precisa.</p>
+            <input
+              type="text"
+              placeholder="Buscar especialidade..."
+              value={specialtySearch}
+              onChange={(e) => setSpecialtySearch(e.target.value)}
+              className="h-9 w-full max-w-sm px-4 rounded-xl bg-white border border-[#D0DDD6] text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
+            />
+            <div className="grid grid-cols-4 gap-3">
+              {filteredSpecialties.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSelectedSpecialty(s.id); setStep(2) }}
+                  className={`bg-white rounded-2xl border p-5 text-left hover:shadow-md transition-all ${
+                    selectedSpecialty === s.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9] hover:border-[#2CC295]/40'
+                  }`}
+                >
+                  <div className="text-3xl mb-3">{s.icon}</div>
+                  <p className="text-sm font-semibold text-[#000F11]">{s.name}</p>
+                  <p className="text-xs text-[#8A9390] mt-1 line-clamp-2">{s.description}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-[10px] text-[#2CC295] font-medium">{s.doctorCount} médicos</span>
+                    <span className="text-[10px] text-[#8A9390]">≈{s.avgWaitDays}d</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Doctor */}
+        {step === 2 && (
+          <div>
+            <button onClick={() => setStep(1)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
+              ← Voltar
+            </button>
+            <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha o médico</h2>
+            <p className="text-sm text-[#8A9390] mb-5">Profissionais disponíveis em {specialty?.name ?? 'todas as especialidades'}.</p>
+            <div className="grid grid-cols-2 gap-4">
+              {availableDoctors.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => { setSelectedDoctor(d.id); setStep(3) }}
+                  className={`bg-white rounded-2xl border p-5 text-left hover:shadow-md transition-all ${
+                    selectedDoctor === d.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9]'
+                  }`}
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2CC295]/70 to-[#03624C] flex items-center justify-center text-white font-bold flex-shrink-0">
+                      {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#000F11]">{d.name}</p>
+                      <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
+                      <p className="text-[10px] text-[#8A9390]">{d.crm}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[#8A9390] mb-3 line-clamp-2">{d.bio}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span className="text-xs font-semibold text-[#000F11]">{d.rating}</span>
+                      <span className="text-[10px] text-[#8A9390]">({d.reviewCount})</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-[#8A9390]">
+                      <Clock className="w-3 h-3" />
+                      {d.availableDays.join(', ')}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Unit */}
+        {step === 3 && (
+          <div>
+            <button onClick={() => setStep(2)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
+              ← Voltar
+            </button>
+            <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a unidade</h2>
+            <p className="text-sm text-[#8A9390] mb-5">Selecione a unidade mais conveniente para você.</p>
+            <div className="grid grid-cols-2 gap-4">
+              {availableUnits.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => { setSelectedUnit(u.id); setStep(4) }}
+                  className={`bg-white rounded-2xl border p-5 text-left hover:shadow-md transition-all ${
+                    selectedUnit === u.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#F7F6F6] border border-[#E8EDE9] flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-[#03624C]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#000F11]">{u.name}</p>
+                      <p className="text-xs text-[#8A9390]">{u.neighborhood}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[#8A9390] mb-2">{u.address}</p>
+                  <p className="text-[10px] text-[#2CC295] font-medium">{u.hours.split('|')[0]}</p>
+                  <div className="flex gap-2 mt-3">
+                    {u.parking && <span className="text-[10px] bg-[#F7F6F6] text-[#8A9390] px-2 py-0.5 rounded-full">Estacionamento</span>}
+                    {u.accessibility && <span className="text-[10px] bg-[#F7F6F6] text-[#8A9390] px-2 py-0.5 rounded-full">Acessível</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Date */}
+        {step === 4 && (
+          <div>
+            <button onClick={() => setStep(3)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
+              ← Voltar
+            </button>
+            <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a data</h2>
+            <p className="text-sm text-[#8A9390] mb-5">Selecione uma data disponível para sua consulta.</p>
+            <div className="grid grid-cols-7 gap-2">
+              {availableDates.map((d, i) => {
+                const isSelected = selectedDate?.toDateString() === d.toDateString()
+                const isWeekend = d.getDay() === 6
+                return (
+                  <button
+                    key={i}
+                    onClick={() => { setSelectedDate(d); setStep(5) }}
+                    className={`rounded-2xl border p-3 text-center transition-all hover:shadow-md ${
+                      isSelected ? 'bg-[#03624C] border-[#03624C] text-white' :
+                      isWeekend ? 'bg-amber-50 border-amber-100 hover:border-amber-300' :
+                      'bg-white border-[#E8EDE9] hover:border-[#2CC295]/40'
+                    }`}
+                  >
+                    <p className={`text-[10px] font-medium mb-1 ${isSelected ? 'text-white/70' : 'text-[#8A9390]'}`}>
+                      {DAYS[d.getDay()]}
+                    </p>
+                    <p className={`text-base font-bold ${isSelected ? 'text-white' : 'text-[#000F11]'}`}>
+                      {d.getDate()}
+                    </p>
+                    <p className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-[#8A9390]'}`}>
+                      {MONTHS[d.getMonth()]}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Time */}
+        {step === 5 && (
+          <div>
+            <button onClick={() => setStep(4)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
+              ← Voltar
+            </button>
+            <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha o horário</h2>
+            <p className="text-sm text-[#8A9390] mb-5">
+              Horários disponíveis para {selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}.
+            </p>
+            <div className="grid grid-cols-6 gap-3">
+              {(doctor?.timeSlots ?? ['08:00','08:30','09:00','09:30','10:00','10:30','14:00','14:30']).map((t: string) => (
+                <button
+                  key={t}
+                  onClick={() => { setSelectedTime(t); setStep(6) }}
+                  className={`rounded-2xl border p-4 text-center text-sm font-semibold transition-all hover:shadow-md ${
+                    selectedTime === t ? 'bg-[#03624C] border-[#03624C] text-white' : 'bg-white border-[#E8EDE9] text-[#000F11] hover:border-[#2CC295]/40'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Confirm */}
+        {step === 6 && (
+          <div className="max-w-lg mx-auto">
+            <button onClick={() => setStep(5)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
+              ← Voltar
+            </button>
+            <h2 className="text-lg font-semibold text-[#000F11] mb-2">Confirmar agendamento</h2>
+            <p className="text-sm text-[#8A9390] mb-5">Revise os detalhes antes de confirmar.</p>
+
+            <div className="bg-white rounded-2xl border border-[#E8EDE9] p-6 space-y-4 mb-6">
+              <div className="flex items-center gap-4 pb-4 border-b border-[#F7F6F6]">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2CC295]/70 to-[#03624C] flex items-center justify-center text-white font-bold">
+                  {doctor?.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                </div>
+                <div>
+                  <p className="font-bold text-[#000F11]">{doctor?.name}</p>
+                  <p className="text-sm text-[#2CC295]">{specialty?.name}</p>
+                  <p className="text-xs text-[#8A9390]">{doctor?.crm}</p>
+                </div>
+              </div>
+              {[
+                { icon: MapPin, label: 'Unidade', value: `${unit?.name} — ${unit?.address}` },
+                { icon: Calendar, label: 'Data', value: selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) },
+                { icon: Clock, label: 'Horário', value: selectedTime },
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#F7F6F6] flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-[#03624C]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#8A9390] font-medium uppercase tracking-wide">{label}</p>
+                    <p className="text-sm font-semibold text-[#000F11]">{value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-[#2CC295]/5 border border-[#2CC295]/20 rounded-xl p-4 mb-6 text-sm text-[#03624C]">
+              Você receberá uma confirmação por e-mail e SMS com os detalhes da consulta.
+            </div>
+
+            <Button className="w-full" size="lg" onClick={() => setConfirmed(true)}>
+              <CheckCircle2 className="w-5 h-5" /> Confirmar Agendamento
+            </Button>
+          </div>
+        )}
+      </div>
+    </AppShell>
+  )
+}
+
+export default function AgendarPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center text-[#8A9390]">Carregando...</div>}>
+      <BookingContent />
+    </Suspense>
+  )
+}
