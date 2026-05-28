@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { motion } from 'framer-motion'
 import {
   Home,
   CalendarPlus,
@@ -55,24 +56,48 @@ export function Sidebar() {
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           const isNotif = href === '/notificacoes'
+
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200',
                 active
-                  ? 'bg-[#2CC295]/15 text-[#2CC295]'
-                  : 'text-[#8A9390] hover:text-white hover:bg-white/5'
+                  ? 'text-[#2CC295]'
+                  : 'text-[#8A9390] hover:text-white'
               )}
             >
+              {/* Sliding background — animates between nav items via layoutId */}
+              {active && (
+                <motion.div
+                  layoutId="sidebar-active-bg"
+                  className="absolute inset-0 rounded-xl bg-[#2CC295]/12"
+                  transition={{ type: 'spring', stiffness: 480, damping: 38, mass: 0.8 }}
+                />
+              )}
+
+              {/* Left accent bar */}
+              {active && (
+                <motion.div
+                  layoutId="sidebar-active-bar"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#2CC295] rounded-full"
+                  transition={{ type: 'spring', stiffness: 480, damping: 38, mass: 0.8 }}
+                />
+              )}
+
               <Icon
-                className={cn('w-4 h-4 flex-shrink-0', active ? 'text-[#2CC295]' : 'text-current')}
+                className={cn(
+                  'w-4 h-4 flex-shrink-0 relative z-10 transition-colors duration-200',
+                  active ? 'text-[#2CC295]' : 'text-current'
+                )}
                 strokeWidth={active ? 2.5 : 1.8}
               />
-              <span className="flex-1">{label}</span>
+
+              <span className="flex-1 relative z-10">{label}</span>
+
               {isNotif && unreadCount > 0 && (
-                <span className="flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#2CC295] text-[#000F11] text-[10px] font-bold px-1">
+                <span className="relative z-10 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#2CC295] text-[#000F11] text-[10px] font-bold px-1">
                   {unreadCount}
                 </span>
               )}
@@ -83,17 +108,16 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 pb-4 space-y-2 border-t border-white/5 pt-3">
-        {/* Patient card */}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2CC295] to-[#03624C] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            MC
+            FA
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white text-xs font-semibold leading-none truncate">Mariana Costa</p>
+            <p className="text-white text-xs font-semibold leading-none truncate">Felipe Almeida</p>
             <p className="text-[#8A9390] text-[10px] mt-0.5">Saúde Premium · desde 2022</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs text-[#8A9390] hover:text-white hover:bg-white/5 transition-all">
+        <button className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs text-[#8A9390] hover:text-white hover:bg-white/5 transition-colors duration-200">
           <LogOut className="w-3.5 h-3.5" />
           Sair
         </button>

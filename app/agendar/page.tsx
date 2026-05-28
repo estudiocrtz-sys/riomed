@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
+import { BackButton } from '@/components/ui/BackButton'
 import { specialties, getSpecialtyById } from '@/data/specialties'
+import { specialtyIconMap } from '@/lib/specialty-icons'
 import { doctors, getDoctorsBySpecialty, getDoctorById } from '@/data/doctors'
 import { units, getUnitById } from '@/data/units'
 import {
-  Check, ChevronRight, Star, MapPin, Clock, Calendar,
-  CheckCircle2, PartyPopper,
+  Check, Star, MapPin, Clock, Calendar, CheckCircle2,
 } from 'lucide-react'
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
@@ -33,31 +35,64 @@ const availableDates = generateDates()
 
 const stepLabels = ['Especialidade', 'Médico', 'Unidade', 'Data', 'Horário', 'Confirmação']
 
+function AnimatedSuccessCheck() {
+  return (
+    <motion.div
+      initial={{ scale: 0.75, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 24, mass: 0.8 }}
+      className="relative w-20 h-20 rounded-full bg-[#2CC295]/10 flex items-center justify-center mx-auto mb-6"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0.45 }}
+        animate={{ scale: 1.35, opacity: 0 }}
+        transition={{ duration: 0.7, ease: 'easeOut', delay: 0.08 }}
+        className="absolute inset-0 rounded-full bg-[#2CC295]/20"
+      />
+      <svg className="relative z-10 w-10 h-10" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+        <motion.circle
+          cx="22"
+          cy="22"
+          r="18"
+          stroke="#2CC295"
+          strokeWidth="4"
+          strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.55, ease: 'easeOut', delay: 0.12 }}
+        />
+        <motion.path
+          d="M14.5 22.5L19.5 27.5L30 17"
+          stroke="#2CC295"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut', delay: 0.48 }}
+        />
+      </svg>
+    </motion.div>
+  )
+}
+
 function BookingContent() {
   const searchParams = useSearchParams()
-  const [step, setStep] = useState<Step>(1)
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(searchParams.get('specialty'))
-  const [selectedDoctor, setSelectedDoctor] = useState<string | null>(searchParams.get('doctor'))
-  const [selectedUnit, setSelectedUnit] = useState<string | null>(searchParams.get('unit'))
+  const router = useRouter()
+  const doctorParam = searchParams.get('doctor')
+  const specialtyParam = searchParams.get('specialty')
+  const unitParam = searchParams.get('unit')
+  const initialDoctor = doctorParam ? getDoctorById(doctorParam) : null
+  const initialStep: Step = initialDoctor ? 3 : unitParam || specialtyParam ? 2 : 1
+
+  const [step, setStep] = useState<Step>(initialStep)
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(initialDoctor?.specialtyId ?? specialtyParam)
+  const [selectedDoctor, setSelectedDoctor] = useState<string | null>(initialDoctor ? doctorParam : null)
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(unitParam)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [specialtySearch, setSpecialtySearch] = useState('')
-
-  // Auto-advance from URL params
-  useEffect(() => {
-    const doc = searchParams.get('doctor')
-    const sp = searchParams.get('specialty')
-    const unit = searchParams.get('unit')
-    if (doc) {
-      const d = getDoctorById(doc)
-      if (d) { setSelectedSpecialty(d.specialtyId); setSelectedDoctor(doc); setStep(3) }
-    } else if (unit) {
-      setSelectedUnit(unit); setStep(2)
-    } else if (sp) {
-      setSelectedSpecialty(sp); setStep(2)
-    }
-  }, [])
 
   const filteredSpecialties = specialties.filter((s) =>
     s.name.toLowerCase().includes(specialtySearch.toLowerCase())
@@ -81,9 +116,7 @@ function BookingContent() {
         <Header title="Agendar Consulta" />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="bg-white rounded-3xl border border-[#E8EDE9] p-12 max-w-md w-full text-center shadow-lg">
-            <div className="w-20 h-20 rounded-full bg-[#2CC295]/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-10 h-10 text-[#2CC295]" />
-            </div>
+            <AnimatedSuccessCheck />
             <h2 className="text-2xl font-bold text-[#000F11] mb-2">Consulta Agendada!</h2>
             <p className="text-[#8A9390] mb-6">
               Sua consulta foi agendada com sucesso. Você receberá um lembrete por e-mail e SMS.
@@ -145,6 +178,7 @@ function BookingContent() {
         {/* Step 1: Specialty */}
         {step === 1 && (
           <div>
+            <BackButton onClick={() => router.push('/inicio')} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a especialidade</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione a especialidade médica que você precisa.</p>
             <input
@@ -163,7 +197,17 @@ function BookingContent() {
                     selectedSpecialty === s.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9] hover:border-[#2CC295]/40'
                   }`}
                 >
-                  <div className="text-3xl mb-3">{s.icon}</div>
+                  {(() => {
+                    const Icon = specialtyIconMap[s.iconName]
+                    return (
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center mb-3"
+                        style={{ backgroundColor: `${s.color}1a` }}
+                      >
+                        <Icon className="w-6 h-6" style={{ color: s.color }} />
+                      </div>
+                    )
+                  })()}
                   <p className="text-sm font-semibold text-[#000F11]">{s.name}</p>
                   <p className="text-xs text-[#8A9390] mt-1 line-clamp-2">{s.description}</p>
                   <div className="flex items-center justify-between mt-3">
@@ -179,9 +223,7 @@ function BookingContent() {
         {/* Step 2: Doctor */}
         {step === 2 && (
           <div>
-            <button onClick={() => setStep(1)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
-              ← Voltar
-            </button>
+            <BackButton onClick={() => setStep(1)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha o médico</h2>
             <p className="text-sm text-[#8A9390] mb-5">Profissionais disponíveis em {specialty?.name ?? 'todas as especialidades'}.</p>
             <div className="grid grid-cols-2 gap-4">
@@ -224,9 +266,7 @@ function BookingContent() {
         {/* Step 3: Unit */}
         {step === 3 && (
           <div>
-            <button onClick={() => setStep(2)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
-              ← Voltar
-            </button>
+            <BackButton onClick={() => setStep(2)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a unidade</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione a unidade mais conveniente para você.</p>
             <div className="grid grid-cols-2 gap-4">
@@ -262,9 +302,7 @@ function BookingContent() {
         {/* Step 4: Date */}
         {step === 4 && (
           <div>
-            <button onClick={() => setStep(3)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
-              ← Voltar
-            </button>
+            <BackButton onClick={() => setStep(3)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a data</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione uma data disponível para sua consulta.</p>
             <div className="grid grid-cols-7 gap-2">
@@ -300,9 +338,7 @@ function BookingContent() {
         {/* Step 5: Time */}
         {step === 5 && (
           <div>
-            <button onClick={() => setStep(4)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
-              ← Voltar
-            </button>
+            <BackButton onClick={() => setStep(4)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha o horário</h2>
             <p className="text-sm text-[#8A9390] mb-5">
               Horários disponíveis para {selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}.
@@ -326,9 +362,7 @@ function BookingContent() {
         {/* Step 6: Confirm */}
         {step === 6 && (
           <div className="max-w-lg mx-auto">
-            <button onClick={() => setStep(5)} className="flex items-center gap-1 text-sm text-[#8A9390] hover:text-[#000F11] mb-4">
-              ← Voltar
-            </button>
+            <BackButton onClick={() => setStep(5)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Confirmar agendamento</h2>
             <p className="text-sm text-[#8A9390] mb-5">Revise os detalhes antes de confirmar.</p>
 

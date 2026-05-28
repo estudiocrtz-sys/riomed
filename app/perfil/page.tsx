@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
 import { currentPatient } from '@/data/patient'
-import { Save, User, Shield, Bell, Heart, Phone, Lock } from 'lucide-react'
+import { Save, User, Shield, Bell, Heart, Phone, Lock, ChevronDown } from 'lucide-react'
 
 const sections = [
   { id: 'dados', label: 'Dados Pessoais', icon: User },
@@ -34,6 +34,27 @@ function Field({ label, defaultValue, type = 'text', readOnly = false }: { label
   )
 }
 
+function SelectField({ label, defaultValue, options }: { label: string; defaultValue: string; options: string[] }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold text-[#8A9390] uppercase tracking-wide">{label}</label>
+      <div className="relative mt-1.5">
+        <select
+          defaultValue={defaultValue}
+          className="w-full appearance-none px-3 py-2.5 pr-10 rounded-xl border border-[#D0DDD6] bg-white text-sm text-[#000F11] transition-all focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
+        >
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A9390]" />
+      </div>
+    </div>
+  )
+}
+
 export default function PerfilPage() {
   const [activeSection, setActiveSection] = useState('dados')
   const [saved, setSaved] = useState(false)
@@ -53,7 +74,7 @@ export default function PerfilPage() {
             {/* Avatar */}
             <div className="flex flex-col items-center p-5 bg-white rounded-2xl border border-[#E8EDE9] mb-4">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2CC295] to-[#03624C] flex items-center justify-center text-white text-2xl font-bold mb-3">
-                MC
+                FA
               </div>
               <p className="text-sm font-bold text-[#000F11]">{currentPatient.name}</p>
               <p className="text-xs text-[#2CC295] font-medium">{currentPatient.insurance}</p>
@@ -85,7 +106,7 @@ export default function PerfilPage() {
                   <Field label="Nome completo" defaultValue={currentPatient.name} />
                   <Field label="CPF" defaultValue={currentPatient.cpf} readOnly />
                   <Field label="Data de nascimento" defaultValue="18/05/1990" type="date" />
-                  <Field label="Gênero" defaultValue={currentPatient.gender} />
+                  <SelectField label="Gênero" defaultValue={currentPatient.gender} options={['Feminino', 'Masculino']} />
                   <Field label="Estado civil" defaultValue={currentPatient.maritalStatus} />
                   <Field label="Telefone" defaultValue={currentPatient.phone} type="tel" />
                   <Field label="E-mail" defaultValue={currentPatient.email} type="email" />

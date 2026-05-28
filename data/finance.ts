@@ -55,7 +55,7 @@ export const financeRecords: FinanceRecord[] = [
   {
     id: 'f5',
     patientId: 'p4',
-    patientName: 'Mariana Costa',
+    patientName: 'Felipe Almeida',
     doctorName: 'Dra. Beatriz Nunes',
     specialty: 'Clínica Geral',
     date: '2024-05-26',

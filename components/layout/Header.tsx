@@ -49,10 +49,10 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
         <Link href="/perfil">
           <button className="flex items-center gap-2.5 h-9 px-3 rounded-xl bg-white border border-[#D0DDD6] hover:border-[#8A9390] transition-all">
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#2CC295] to-[#03624C] flex items-center justify-center text-white text-[10px] font-bold">
-              MC
+              FA
             </div>
             <div className="text-left">
-              <p className="text-xs font-semibold text-[#000F11] leading-none">Mariana Costa</p>
+              <p className="text-xs font-semibold text-[#000F11] leading-none">Felipe Almeida</p>
               <p className="text-[10px] text-[#8A9390] leading-none mt-0.5">Saúde Premium</p>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-[#8A9390]" />

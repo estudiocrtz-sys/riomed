@@ -5,6 +5,10 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Button } from '@/components/ui/Button'
+import { FadeIn } from '@/components/motion/FadeIn'
+import { StaggerContainer } from '@/components/motion/StaggerContainer'
+import { StaggerItem } from '@/components/motion/StaggerItem'
+import { AnimatedCard } from '@/components/motion/AnimatedCard'
 import { currentPatient } from '@/data/patient'
 import { getUpcomingAppointments } from '@/data/appointments'
 import { specialties } from '@/data/specialties'
@@ -12,9 +16,10 @@ import { doctors } from '@/data/doctors'
 import { units } from '@/data/units'
 import { notifications } from '@/data/notifications'
 import { formatDate } from '@/lib/utils'
+import { specialtyIconMap } from '@/lib/specialty-icons'
 import {
   CalendarPlus, Calendar, ArrowRight, MapPin,
-  Star, Bell, ChevronRight, Clock, Shield, Stethoscope,
+  Star, Bell, Clock, Shield,
 } from 'lucide-react'
 
 const upcoming = getUpcomingAppointments()
@@ -29,52 +34,54 @@ export default function InicioPage() {
       <div className="flex-1 p-8 space-y-8">
 
         {/* Welcome hero */}
-        <div className="bg-gradient-to-br from-[#023221] to-[#000F11] rounded-2xl p-7 flex items-center justify-between relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #2CC295 0%, transparent 60%)' }} />
-          <div className="relative z-10">
-            <p className="text-[#2CC295] text-sm font-medium mb-1">Olá, {currentPatient.firstName} 👋</p>
-            <h2 className="text-white text-2xl font-bold mb-1">Como você está hoje?</h2>
-            <p className="text-white/60 text-sm max-w-md">
-              Sua saúde é nossa prioridade. Agende sua consulta, veja seus exames ou acompanhe seus médicos.
-            </p>
-            <div className="flex items-center gap-3 mt-5">
-              <Link href="/agendar">
-                <Button className="gap-2">
-                  <CalendarPlus className="w-4 h-4" /> Agendar Consulta
-                </Button>
-              </Link>
-              <Link href="/minhas-consultas">
-                <Button variant="ghost" className="text-white hover:bg-white/10 gap-2">
-                  <Calendar className="w-4 h-4" /> Minhas Consultas
-                </Button>
-              </Link>
+        <FadeIn>
+          <div className="bg-gradient-to-br from-[#023221] to-[#000F11] rounded-2xl p-7 flex items-center justify-between relative overflow-hidden">
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #2CC295 0%, transparent 60%)' }}
+            />
+            <div className="relative z-10">
+              <p className="text-[#2CC295] text-sm font-medium mb-1">Olá, {currentPatient.firstName} 👋</p>
+              <h2 className="text-white text-2xl font-bold mb-1">Como você está hoje?</h2>
+              <p className="text-white/60 text-sm max-w-md">
+                Sua saúde é nossa prioridade. Agende sua consulta, veja seus exames ou acompanhe seus médicos.
+              </p>
+              <div className="flex items-center gap-3 mt-5">
+                <Link href="/agendar">
+                  <Button className="gap-2"><CalendarPlus className="w-4 h-4" /> Agendar Consulta</Button>
+                </Link>
+                <Link href="/minhas-consultas">
+                  <Button variant="ghost" className="!text-white hover:!text-white hover:bg-white/10 gap-2">
+                    <Calendar className="w-4 h-4" /> Minhas Consultas
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-          <div className="hidden xl:flex items-center gap-3 relative z-10">
-            <div className="flex flex-col gap-2">
-              {[
-                { label: 'Convênio', value: currentPatient.insurance, icon: Shield },
-                { label: 'Paciente desde', value: currentPatient.patientSince, icon: Calendar },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5">
-                  <Icon className="w-4 h-4 text-[#2CC295]" />
-                  <div>
-                    <p className="text-white/50 text-[10px]">{label}</p>
-                    <p className="text-white text-xs font-semibold">{value}</p>
+            <div className="hidden xl:flex items-center gap-3 relative z-10">
+              <div className="flex flex-col gap-2">
+                {[
+                  { label: 'Convênio', value: currentPatient.insurance, icon: Shield },
+                  { label: 'Paciente desde', value: currentPatient.patientSince, icon: Calendar },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5">
+                    <Icon className="w-4 h-4 text-[#2CC295]" />
+                    <div>
+                      <p className="text-white/50 text-[10px]">{label}</p>
+                      <p className="text-white text-xs font-semibold">{value}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </FadeIn>
 
         {/* Next appointment + Notifications */}
         <div className="grid grid-cols-3 gap-4">
           {/* Next appointment */}
-          <div className="col-span-2">
+          <FadeIn className="col-span-2" delay={0.06}>
             {nextAppointment ? (
-              <div className="bg-white rounded-2xl border border-[#E8EDE9] p-5">
+              <div className="bg-white rounded-2xl border border-[#E8EDE9] p-5 h-full">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-[#000F11]">Próxima Consulta</h3>
                   <Link href="/minhas-consultas" className="flex items-center gap-1 text-xs text-[#03624C] font-medium hover:text-[#2CC295]">
@@ -135,40 +142,40 @@ export default function InicioPage() {
                 <Link href="/agendar"><Button><CalendarPlus className="w-4 h-4" /> Agendar agora</Button></Link>
               </div>
             )}
-          </div>
+          </FadeIn>
 
           {/* Notifications */}
-          <div className="bg-white rounded-2xl border border-[#E8EDE9] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#000F11]">Notificações</h3>
-              <Link href="/notificacoes" className="text-xs text-[#03624C] font-medium hover:text-[#2CC295]">
-                Ver todas
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {unread.slice(0, 3).map((n) => {
-                const colors: Record<string, string> = {
-                  confirmacao: 'bg-[#2CC295]/10 text-[#03624C]',
-                  exame: 'bg-blue-50 text-blue-700',
-                  lembrete: 'bg-amber-50 text-amber-700',
-                  retorno: 'bg-purple-50 text-purple-700',
-                  cancelamento: 'bg-red-50 text-red-600',
-                  aviso: 'bg-[#2CC295]/10 text-[#03624C]',
-                }
-                return (
-                  <Link key={n.id} href={n.link ?? '/notificacoes'}>
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl hover:bg-[#F7F6F6] cursor-pointer transition-colors">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.read ? 'bg-[#D0DDD6]' : 'bg-[#2CC295]'}`} />
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#000F11] leading-tight">{n.title}</p>
-                        <p className="text-[10px] text-[#8A9390] mt-0.5 line-clamp-2">{n.message}</p>
+          <FadeIn delay={0.1}>
+            <div className="bg-white rounded-2xl border border-[#E8EDE9] p-5 h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-[#000F11]">Notificações</h3>
+                <Link href="/notificacoes" className="text-xs text-[#03624C] font-medium hover:text-[#2CC295]">Ver todas</Link>
+              </div>
+              <div className="space-y-2">
+                {unread.slice(0, 3).map((n) => {
+                  const colors: Record<string, string> = {
+                    confirmacao:  'bg-[#2CC295]/10 text-[#03624C]',
+                    exame:        'bg-blue-50 text-blue-700',
+                    lembrete:     'bg-amber-50 text-amber-700',
+                    retorno:      'bg-purple-50 text-purple-700',
+                    cancelamento: 'bg-red-50 text-red-600',
+                    aviso:        'bg-[#2CC295]/10 text-[#03624C]',
+                  }
+                  return (
+                    <Link key={n.id} href={n.link ?? '/notificacoes'}>
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl hover:bg-[#F7F6F6] cursor-pointer transition-colors">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.read ? 'bg-[#D0DDD6]' : 'bg-[#2CC295]'}`} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[#000F11] leading-tight">{n.title}</p>
+                          <p className="text-[10px] text-[#8A9390] mt-0.5 line-clamp-2">{n.message}</p>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                )
-              })}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          </FadeIn>
         </div>
 
         {/* Specialties */}
@@ -179,18 +186,28 @@ export default function InicioPage() {
               Ver todas <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-5 gap-3">
-            {specialties.slice(0, 5).map((s) => (
-              <Link key={s.id} href={`/agendar?specialty=${s.id}`}>
-                <div className="bg-white rounded-2xl border border-[#E8EDE9] p-4 hover:shadow-md hover:border-[#2CC295]/30 transition-all cursor-pointer text-center">
-                  <div className="text-3xl mb-2">{s.icon}</div>
-                  <p className="text-sm font-semibold text-[#000F11] leading-tight">{s.name}</p>
-                  <p className="text-[10px] text-[#8A9390] mt-1">{s.doctorCount} médicos</p>
-                  <p className="text-[10px] text-[#2CC295] font-medium mt-0.5">≈{s.avgWaitDays} dias</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <StaggerContainer className="grid grid-cols-5 gap-3">
+            {specialties.slice(0, 5).map((s) => {
+              const Icon = specialtyIconMap[s.iconName]
+              return (
+                <StaggerItem key={s.id}>
+                  <Link href={`/agendar?specialty=${s.id}`}>
+                    <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-4 cursor-pointer text-center">
+                      <div
+                        className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-3"
+                        style={{ backgroundColor: `${s.color}1a` }}
+                      >
+                        <Icon className="w-5 h-5" style={{ color: s.color }} />
+                      </div>
+                      <p className="text-sm font-semibold text-[#000F11] leading-tight">{s.name}</p>
+                      <p className="text-[10px] text-[#8A9390] mt-1">{s.doctorCount} médicos</p>
+                      <p className="text-[10px] text-[#2CC295] font-medium mt-0.5">≈{s.avgWaitDays} dias</p>
+                    </AnimatedCard>
+                  </Link>
+                </StaggerItem>
+              )
+            })}
+          </StaggerContainer>
         </div>
 
         {/* Doctors + Units */}
@@ -203,26 +220,28 @@ export default function InicioPage() {
                 Ver todos <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="space-y-3">
+            <StaggerContainer className="space-y-3">
               {doctors.slice(0, 3).map((d) => (
-                <div key={d.id} className="bg-white rounded-2xl border border-[#E8EDE9] p-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2CC295]/80 to-[#03624C] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                    {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#000F11]">{d.name}</p>
-                    <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span className="text-xs text-[#8A9390]">{d.rating} ({d.reviewCount} avaliações)</span>
+                <StaggerItem key={d.id}>
+                  <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-4 flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2CC295]/80 to-[#03624C] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                      {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
                     </div>
-                  </div>
-                  <Link href={`/agendar?doctor=${d.id}`}>
-                    <Button size="sm" variant="outline">Agendar</Button>
-                  </Link>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#000F11]">{d.name}</p>
+                      <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span className="text-xs text-[#8A9390]">{d.rating} ({d.reviewCount} avaliações)</span>
+                      </div>
+                    </div>
+                    <Link href={`/agendar?doctor=${d.id}`}>
+                      <Button size="sm" variant="outline">Agendar</Button>
+                    </Link>
+                  </AnimatedCard>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
 
           {/* Units */}
@@ -233,25 +252,28 @@ export default function InicioPage() {
                 Ver todas <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="space-y-3">
+            <StaggerContainer className="space-y-3">
               {units.slice(0, 3).map((u) => (
-                <div key={u.id} className="bg-white rounded-2xl border border-[#E8EDE9] p-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
-                  <div className="w-11 h-11 rounded-2xl bg-[#F7F6F6] border border-[#E8EDE9] flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-[#03624C]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#000F11]">{u.name}</p>
-                    <p className="text-xs text-[#8A9390] truncate">{u.address}</p>
-                    <p className="text-[10px] text-[#2CC295] font-medium mt-0.5">{u.hours.split('|')[0]}</p>
-                  </div>
-                  <Link href={`/agendar?unit=${u.id}`}>
-                    <Button size="sm" variant="outline">Agendar</Button>
-                  </Link>
-                </div>
+                <StaggerItem key={u.id}>
+                  <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-4 flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F7F6F6] border border-[#E8EDE9] flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-[#03624C]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[#000F11]">{u.name}</p>
+                      <p className="text-xs text-[#8A9390] truncate">{u.address}</p>
+                      <p className="text-[10px] text-[#2CC295] font-medium mt-0.5">{u.hours.split('|')[0]}</p>
+                    </div>
+                    <Link href={`/agendar?unit=${u.id}`}>
+                      <Button size="sm" variant="outline">Agendar</Button>
+                    </Link>
+                  </AnimatedCard>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </div>
+
       </div>
     </AppShell>
   )

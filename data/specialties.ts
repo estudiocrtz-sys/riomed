@@ -1,8 +1,20 @@
+export type SpecialtyIconName =
+  | 'Stethoscope'
+  | 'HeartPulse'
+  | 'Sparkles'
+  | 'Cross'
+  | 'Bone'
+  | 'Baby'
+  | 'Brain'
+  | 'Activity'
+  | 'Eye'
+  | 'Droplets'
+
 export interface Specialty {
   id: string
   name: string
   description: string
-  icon: string
+  iconName: SpecialtyIconName
   doctorCount: number
   avgWaitDays: number
   color: string
@@ -13,7 +25,7 @@ export const specialties: Specialty[] = [
     id: 's1',
     name: 'Clínica Geral',
     description: 'Atendimento primário, check-ups e acompanhamento geral de saúde.',
-    icon: '🩺',
+    iconName: 'Stethoscope',
     doctorCount: 4,
     avgWaitDays: 2,
     color: '#2CC295',
@@ -22,7 +34,7 @@ export const specialties: Specialty[] = [
     id: 's2',
     name: 'Cardiologia',
     description: 'Diagnóstico e tratamento de doenças do coração e vasos sanguíneos.',
-    icon: '❤️',
+    iconName: 'HeartPulse',
     doctorCount: 2,
     avgWaitDays: 5,
     color: '#ef4444',
@@ -31,7 +43,7 @@ export const specialties: Specialty[] = [
     id: 's3',
     name: 'Dermatologia',
     description: 'Cuidados com a pele, cabelos, unhas e tratamentos estéticos dermatológicos.',
-    icon: '🌿',
+    iconName: 'Sparkles',
     doctorCount: 2,
     avgWaitDays: 4,
     color: '#84cc16',
@@ -40,7 +52,7 @@ export const specialties: Specialty[] = [
     id: 's4',
     name: 'Ginecologia',
     description: 'Saúde da mulher, pré-natal, climatério e saúde reprodutiva.',
-    icon: '🌸',
+    iconName: 'Cross',
     doctorCount: 2,
     avgWaitDays: 3,
     color: '#ec4899',
@@ -49,7 +61,7 @@ export const specialties: Specialty[] = [
     id: 's5',
     name: 'Ortopedia',
     description: 'Tratamento de ossos, articulações, músculos e medicina esportiva.',
-    icon: '🦴',
+    iconName: 'Bone',
     doctorCount: 2,
     avgWaitDays: 6,
     color: '#f59e0b',
@@ -58,7 +70,7 @@ export const specialties: Specialty[] = [
     id: 's6',
     name: 'Pediatria',
     description: 'Saúde e desenvolvimento de crianças e adolescentes.',
-    icon: '👶',
+    iconName: 'Baby',
     doctorCount: 2,
     avgWaitDays: 2,
     color: '#3b82f6',
@@ -67,7 +79,7 @@ export const specialties: Specialty[] = [
     id: 's7',
     name: 'Neurologia',
     description: 'Diagnóstico de doenças do sistema nervoso central e periférico.',
-    icon: '🧠',
+    iconName: 'Brain',
     doctorCount: 1,
     avgWaitDays: 8,
     color: '#8b5cf6',
@@ -76,7 +88,7 @@ export const specialties: Specialty[] = [
     id: 's8',
     name: 'Endocrinologia',
     description: 'Tratamento de diabetes, tireoide, hormônios e metabolismo.',
-    icon: '⚗️',
+    iconName: 'Activity',
     doctorCount: 1,
     avgWaitDays: 7,
     color: '#06b6d4',
@@ -85,7 +97,7 @@ export const specialties: Specialty[] = [
     id: 's9',
     name: 'Oftalmologia',
     description: 'Exames e tratamentos de doenças dos olhos e da visão.',
-    icon: '👁️',
+    iconName: 'Eye',
     doctorCount: 1,
     avgWaitDays: 5,
     color: '#0ea5e9',
@@ -94,7 +106,7 @@ export const specialties: Specialty[] = [
     id: 's10',
     name: 'Urologia',
     description: 'Tratamento do sistema urinário e saúde masculina.',
-    icon: '💧',
+    iconName: 'Droplets',
     doctorCount: 1,
     avgWaitDays: 6,
     color: '#14b8a6',

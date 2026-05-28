@@ -81,7 +81,7 @@ export const patients: Patient[] = [
   },
   {
     id: 'p4',
-    name: 'Mariana Costa',
+    name: 'Felipe Almeida',
     birthDate: '1990-05-18',
     cpf: '654.321.098-00',
     email: 'mariana.costa@email.com',

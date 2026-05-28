@@ -46,7 +46,7 @@ export const medicalRecords: MedicalRecord[] = [
   {
     id: 'mr4',
     patientId: 'p4',
-    patientName: 'Mariana Costa',
+    patientName: 'Felipe Almeida',
     doctorId: 'd4',
     doctorName: 'Dra. Beatriz Nunes',
     specialty: 'Clínica Geral',

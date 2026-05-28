@@ -2,30 +2,157 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { myAppointments } from '@/data/appointments'
-import { formatDate } from '@/lib/utils'
-import { Calendar, MapPin, Clock, FileText, RotateCcw, X, ChevronRight } from 'lucide-react'
-import type { AppointmentStatus } from '@/data/appointments'
+import { overlayVariants, modalVariants } from '@/lib/motion'
+import { Calendar, MapPin, Clock, FileText, RotateCcw, X } from 'lucide-react'
+import type { Appointment } from '@/data/appointments'
 
 const tabs: { label: string; value: 'proximas' | 'anteriores' | 'canceladas' }[] = [
-  { label: 'Próximas', value: 'proximas' },
+  { label: 'Próximas',   value: 'proximas' },
   { label: 'Anteriores', value: 'anteriores' },
   { label: 'Canceladas', value: 'canceladas' },
 ]
 
+function AnimatedSuccessCheck() {
+  return (
+    <motion.div
+      initial={{ scale: 0.75, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 24, mass: 0.8 }}
+      className="relative w-16 h-16 rounded-full bg-[#2CC295]/10 flex items-center justify-center mx-auto mb-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0.45 }}
+        animate={{ scale: 1.35, opacity: 0 }}
+        transition={{ duration: 0.7, ease: 'easeOut', delay: 0.08 }}
+        className="absolute inset-0 rounded-full bg-[#2CC295]/20"
+      />
+      <svg className="relative z-10 w-9 h-9" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+        <motion.circle
+          cx="22"
+          cy="22"
+          r="18"
+          stroke="#2CC295"
+          strokeWidth="4"
+          strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.55, ease: 'easeOut', delay: 0.12 }}
+        />
+        <motion.path
+          d="M14.5 22.5L19.5 27.5L30 17"
+          stroke="#2CC295"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut', delay: 0.48 }}
+        />
+      </svg>
+    </motion.div>
+  )
+}
+
+function CancelAppointmentModal({
+  appointment,
+  success,
+  onConfirm,
+  onClose,
+}: {
+  appointment: Appointment | null
+  success: boolean
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  return (
+    <AnimatePresence>
+      {appointment && (
+        <>
+          <motion.div
+            key="cancel-overlay"
+            variants={overlayVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            key="cancel-panel"
+            variants={modalVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+          >
+            <div className="w-full max-w-md rounded-3xl border border-[#E8EDE9] bg-white p-7 text-center shadow-2xl pointer-events-auto">
+              {success ? (
+                <>
+                  <AnimatedSuccessCheck />
+                  <h2 className="text-xl font-bold text-[#000F11] mb-2">Consulta cancelada com sucesso</h2>
+                  <p className="text-sm text-[#8A9390] mb-6">
+                    A consulta com {appointment.doctorName} foi movida para canceladas.
+                  </p>
+                  <Button className="w-full" onClick={onClose}>Entendi</Button>
+                </>
+              ) : (
+                <>
+                  <div className="w-14 h-14 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
+                    <X className="w-7 h-7 text-red-500" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#000F11] mb-2">Deseja realmente cancelar essa consulta?</h2>
+                  <p className="text-sm text-[#8A9390] mb-6">
+                    {appointment.doctorName} · {appointment.specialty} · {appointment.time}
+                  </p>
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1" onClick={onClose}>Voltar</Button>
+                    <Button variant="danger" className="flex-1" onClick={onConfirm}>Sim, cancelar</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export default function MinhasConsultasPage() {
   const [activeTab, setActiveTab] = useState<'proximas' | 'anteriores' | 'canceladas'>('proximas')
+  const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
+  const [cancelSuccess, setCancelSuccess] = useState(false)
+  const [cancelledIds, setCancelledIds] = useState<string[]>([])
 
-  const proximas = myAppointments.filter((a) => ['agendada', 'confirmada'].includes(a.status)).sort((a, b) => a.date.localeCompare(b.date))
-  const anteriores = myAppointments.filter((a) => a.status === 'concluida').sort((a, b) => b.date.localeCompare(a.date))
-  const canceladas = myAppointments.filter((a) => ['cancelada', 'remarcada'].includes(a.status))
+  const appointments = myAppointments.map((appointment) =>
+    cancelledIds.includes(appointment.id)
+      ? { ...appointment, status: 'cancelada' as const, notes: 'Cancelada pelo paciente.' }
+      : appointment
+  )
+
+  const proximas   = appointments.filter((a) => ['agendada', 'confirmada'].includes(a.status)).sort((a, b) => a.date.localeCompare(b.date))
+  const anteriores = appointments.filter((a) => a.status === 'concluida').sort((a, b) => b.date.localeCompare(a.date))
+  const canceladas = appointments.filter((a) => ['cancelada', 'remarcada'].includes(a.status)).sort((a, b) => b.date.localeCompare(a.date))
 
   const items = activeTab === 'proximas' ? proximas : activeTab === 'anteriores' ? anteriores : canceladas
+
+  function handleConfirmCancel() {
+    if (!cancelTarget) return
+    setCancelledIds((ids) => [...new Set([...ids, cancelTarget.id])])
+    setCancelSuccess(true)
+  }
+
+  function handleCloseCancelModal() {
+    setCancelTarget(null)
+    setCancelSuccess(false)
+  }
 
   return (
     <AppShell>
@@ -40,39 +167,67 @@ export default function MinhasConsultasPage() {
       />
 
       <div className="flex-1 p-8 space-y-6">
+
         {/* Tabs */}
-        <div className="flex items-center gap-1 bg-white border border-[#E8EDE9] rounded-2xl p-1.5 w-fit">
+        <div className="relative flex items-center gap-1 bg-white border border-[#E8EDE9] rounded-2xl p-1.5 w-fit">
           {tabs.map((tab) => {
             const count = tab.value === 'proximas' ? proximas.length : tab.value === 'anteriores' ? anteriores.length : canceladas.length
+            const active = activeTab === tab.value
+
             return (
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
-                className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === tab.value ? 'bg-[#03624C] text-white shadow-sm' : 'text-[#8A9390] hover:text-[#000F11]'
-                }`}
+                className="relative px-5 py-2 rounded-xl text-sm font-medium transition-colors duration-200 z-10"
+                style={{ color: active ? 'white' : '#8A9390' }}
               >
-                {tab.label}
-                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                  activeTab === tab.value ? 'bg-white/20 text-white' : 'bg-[#F7F6F6] text-[#8A9390]'
-                }`}>{count}</span>
+                {/* Sliding background */}
+                {active && (
+                  <motion.div
+                    layoutId="tab-active-bg"
+                    className="absolute inset-0 bg-[#03624C] rounded-xl shadow-sm"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }}
+                  />
+                )}
+                <span className="relative z-10">
+                  {tab.label}
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full transition-colors duration-200 ${
+                    active ? 'bg-white/20 text-white' : 'bg-[#F7F6F6] text-[#8A9390]'
+                  }`}>
+                    {count}
+                  </span>
+                </span>
               </button>
             )
           })}
         </div>
 
-        {/* List */}
         {items.length === 0 ? (
           <EmptyState
             icon={<Calendar />}
             title="Nenhuma consulta aqui"
-            description={activeTab === 'proximas' ? 'Você não tem consultas agendadas. Que tal marcar uma?' : 'Nenhum histórico encontrado.'}
-            action={activeTab === 'proximas' ? <Link href="/agendar"><Button>Agendar agora</Button></Link> : undefined}
+            description={
+              activeTab === 'proximas'
+                ? 'Você não tem consultas agendadas. Que tal marcar uma?'
+                : 'Nenhum histórico encontrado.'
+            }
+            action={
+              activeTab === 'proximas'
+                ? <Link href="/agendar"><Button>Agendar agora</Button></Link>
+                : undefined
+            }
           />
         ) : (
           <div className="space-y-3">
             {items.map((apt) => (
-              <div key={apt.id} className="bg-white rounded-2xl border border-[#E8EDE9] p-5">
+              <motion.div
+                key={apt.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -1, boxShadow: '0 4px 16px rgba(0,15,17,0.07)' }}
+                transition={{ duration: 0.18 }}
+                className="bg-white rounded-2xl border border-[#E8EDE9] p-5"
+              >
                 <div className="flex items-start gap-5">
                   {/* Date block */}
                   <div className="flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-[#F7F6F6] border border-[#E8EDE9]">
@@ -114,7 +269,14 @@ export default function MinhasConsultasPage() {
                         <Link href="/agendar">
                           <Button variant="outline" size="sm" className="gap-1.5"><RotateCcw className="w-3.5 h-3.5" /> Remarcar</Button>
                         </Link>
-                        <Button variant="danger" size="sm" className="gap-1.5"><X className="w-3.5 h-3.5" /> Cancelar</Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setCancelTarget(apt)}
+                        >
+                          <X className="w-3.5 h-3.5" /> Cancelar
+                        </Button>
                       </>
                     )}
                     {activeTab === 'anteriores' && (
@@ -132,11 +294,19 @@ export default function MinhasConsultasPage() {
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
+
       </div>
+
+      <CancelAppointmentModal
+        appointment={cancelTarget}
+        success={cancelSuccess}
+        onConfirm={handleConfirmCancel}
+        onClose={handleCloseCancelModal}
+      />
     </AppShell>
   )
 }

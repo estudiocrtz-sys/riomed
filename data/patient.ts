@@ -1,7 +1,7 @@
 export const currentPatient = {
   id: 'p4',
-  name: 'Mariana Costa',
-  firstName: 'Mariana',
+  name: 'Felipe Almeida',
+  firstName: 'Felipe',
   birthDate: '1990-05-18',
   age: 34,
   cpf: '654.321.098-00',
