@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { StaggerContainer } from '@/components/motion/StaggerContainer'
 import { StaggerItem } from '@/components/motion/StaggerItem'
+import { useToast } from '@/components/ui/ToastProvider'
 import { notifications } from '@/data/notifications'
+import { STORAGE_KEYS, usePersistentState } from '@/lib/local-storage'
 import { Bell, CheckCircle2, FileText, Calendar, AlertCircle, Info } from 'lucide-react'
 
 const typeIcon: Record<string, React.ReactNode> = {
@@ -41,21 +42,31 @@ function formatRelativeDate(dateStr: string) {
 }
 
 export default function NotificacoesPage() {
-  const [items, setItems] = useState(notifications)
+  const [items, setItems] = usePersistentState(STORAGE_KEYS.notifications, notifications)
+  const { showToast } = useToast()
   const unread = items.filter((n) => !n.read)
   const read   = items.filter((n) => n.read)
 
   function markAllRead() {
     setItems((prev) => prev.map((n) => ({ ...n, read: true })))
+    showToast({
+      title: 'Notificações atualizadas',
+      description: 'Todas foram marcadas como lidas.',
+      type: 'info',
+    })
   }
   function markRead(id: string) {
     setItems((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
+    showToast({
+      title: 'Notificação lida',
+      type: 'info',
+    })
   }
 
   return (
     <AppShell>
       <Header title="Notificações" subtitle={`${unread.length} não lidas`} />
-      <div className="flex-1 p-8 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
 
         {unread.length > 0 && (
           <div className="flex justify-end">
@@ -77,7 +88,7 @@ export default function NotificacoesPage() {
                 <StaggerItem key={n.id}>
                   <Link href={n.link ?? '#'}>
                     <div
-                      className={`flex items-start gap-4 p-4 rounded-2xl border border-[#2CC295]/20 ${typeBg[n.type]} hover:shadow-sm cursor-pointer transition-shadow`}
+                      className={`flex items-start gap-3 p-4 rounded-2xl border border-[#2CC295]/20 ${typeBg[n.type]} hover:shadow-sm cursor-pointer transition-shadow sm:gap-4`}
                       onClick={() => markRead(n.id)}
                     >
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -89,7 +100,7 @@ export default function NotificacoesPage() {
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         <span className="text-[10px] text-[#8A9390]">{formatRelativeDate(n.date)}</span>
-                        <span className="w-2 h-2 rounded-full bg-[#2CC295]" />
+                        <span className="hidden w-2 h-2 rounded-full bg-[#2CC295] sm:block" />
                       </div>
                     </div>
                   </Link>
@@ -107,7 +118,7 @@ export default function NotificacoesPage() {
               {read.map((n) => (
                 <StaggerItem key={n.id}>
                   <Link href={n.link ?? '#'}>
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-[#E8EDE9] hover:shadow-sm cursor-pointer transition-shadow">
+                    <div className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-[#E8EDE9] hover:shadow-sm cursor-pointer transition-shadow sm:gap-4">
                       <div className="w-9 h-9 rounded-xl bg-[#F7F6F6] border border-[#E8EDE9] flex items-center justify-center flex-shrink-0">
                         {typeIcon[n.type]}
                       </div>

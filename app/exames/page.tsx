@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { StaggerContainer } from '@/components/motion/StaggerContainer'
 import { StaggerItem } from '@/components/motion/StaggerItem'
 import { myDocuments } from '@/data/documents'
@@ -48,10 +49,10 @@ export default function ExamesPage() {
         title="Exames e Documentos"
         subtitle={newDocs > 0 ? `${newDocs} novos documentos disponíveis` : `${myDocuments.length} documentos`}
       />
-      <div className="flex-1 p-8 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Category filter cards — stagger on mount */}
-        <StaggerContainer className="grid grid-cols-6 gap-3">
+        <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {(Object.keys(catLabel) as (DocCategory | 'todos')[]).map((cat) => {
             const count = cat === 'todos'
               ? myDocuments.length
@@ -60,7 +61,7 @@ export default function ExamesPage() {
               <StaggerItem key={cat}>
                 <button
                   onClick={() => setCatFilter(cat)}
-                  className={`w-full bg-white rounded-xl border p-3 text-center transition-all active:scale-[0.97] ${
+                  className={`w-full bg-white rounded-xl border p-3 text-center transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                     catFilter === cat
                       ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20'
                       : 'border-[#E8EDE9] hover:border-[#8A9390]'
@@ -91,7 +92,7 @@ export default function ExamesPage() {
           {filtered.map((doc) => (
             <StaggerItem key={doc.id}>
               <div
-                className={`bg-white rounded-2xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow ${
+                className={`bg-white rounded-2xl border p-4 flex flex-col gap-4 hover:shadow-sm transition-shadow sm:flex-row sm:items-center ${
                   doc.isNew ? 'border-[#2CC295]/30' : 'border-[#E8EDE9]'
                 }`}
               >
@@ -99,7 +100,7 @@ export default function ExamesPage() {
                   <FileText className="w-5 h-5 text-[#03624C]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
                     <p className="text-sm font-semibold text-[#000F11] truncate">{doc.name}</p>
                     {doc.isNew && (
                       <span className="px-1.5 py-0.5 bg-[#2CC295] text-[#000F11] text-[10px] font-bold rounded-full flex-shrink-0">
@@ -109,14 +110,14 @@ export default function ExamesPage() {
                   </div>
                   <p className="text-xs text-[#8A9390]">{doc.doctor} · {formatDate(doc.date)} · {doc.size}</p>
                 </div>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${catColor[doc.category]}`}>
+                <span className={`w-fit text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${catColor[doc.category]}`}>
                   {catLabel[doc.category]}
                 </span>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#D0DDD6] bg-white text-xs text-[#8A9390] hover:text-[#000F11] hover:border-[#8A9390] transition-all active:scale-[0.97]">
+                <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-shrink-0">
+                  <button className="flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#D0DDD6] bg-white text-xs text-[#8A9390] hover:text-[#000F11] hover:border-[#8A9390] transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 sm:flex-none">
                     <Eye className="w-3.5 h-3.5" /> Visualizar
                   </button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
                     <Download className="w-3.5 h-3.5" /> Baixar
                   </Button>
                 </div>
@@ -124,9 +125,11 @@ export default function ExamesPage() {
             </StaggerItem>
           ))}
           {filtered.length === 0 && (
-            <div className="py-16 text-center bg-white rounded-2xl border border-[#E8EDE9]">
-              <p className="text-sm text-[#8A9390]">Nenhum documento encontrado.</p>
-            </div>
+            <EmptyState
+              icon={<FileText />}
+              title="Nenhum documento encontrado"
+              description="Tente buscar por outro nome, médico ou categoria."
+            />
           )}
         </StaggerContainer>
 

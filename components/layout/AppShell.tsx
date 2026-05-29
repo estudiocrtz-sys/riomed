@@ -9,7 +9,7 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex h-screen bg-[#F7F6F6]">
       <Sidebar />
-      <main className="flex-1 ml-64 flex flex-col min-h-screen overflow-y-auto">
+      <main className="flex-1 lg:ml-64 flex flex-col min-h-screen overflow-y-auto pb-20 lg:pb-0">
         <PageTransition>{children}</PageTransition>
       </main>
     </div>

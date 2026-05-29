@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
+import { DoctorAvatar } from '@/components/ui/DoctorAvatar'
 import { StaggerContainer } from '@/components/motion/StaggerContainer'
 import { StaggerItem } from '@/components/motion/StaggerItem'
 import { specialties } from '@/data/specialties'
@@ -26,7 +27,7 @@ export default function EspecialidadesPage() {
   return (
     <AppShell>
       <Header title="Especialidades" subtitle="Todas as áreas médicas disponíveis na RIOMed" />
-      <div className="flex-1 p-8 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
 
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A9390]" />
@@ -39,7 +40,7 @@ export default function EspecialidadesPage() {
           />
         </div>
 
-        <StaggerContainer key={search} className="grid grid-cols-2 gap-4">
+        <StaggerContainer key={search} className="grid gap-4 lg:grid-cols-2">
           {filtered.map((s) => {
             const specDoctors = getDoctorsBySpecialty(s.id)
             const isExpanded = expanded === s.id
@@ -53,7 +54,7 @@ export default function EspecialidadesPage() {
                   className="bg-white rounded-2xl border border-[#E8EDE9] overflow-hidden"
                 >
                   <button
-                    className="w-full p-5 text-left hover:bg-[#F7F6F6]/50 transition-colors"
+                    className="w-full p-4 text-left hover:bg-[#F7F6F6]/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 sm:p-5"
                     onClick={() => setExpanded(isExpanded ? null : s.id)}
                   >
                     <div className="flex items-start gap-4">
@@ -64,7 +65,7 @@ export default function EspecialidadesPage() {
                         <Icon className="w-6 h-6" style={{ color: s.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between gap-3">
                           <p className="text-base font-bold text-[#000F11]">{s.name}</p>
                           <motion.div
                             animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -74,7 +75,7 @@ export default function EspecialidadesPage() {
                           </motion.div>
                         </div>
                         <p className="text-sm text-[#8A9390] mt-1">{s.description}</p>
-                        <div className="flex items-center gap-4 mt-3">
+                        <div className="flex flex-wrap items-center gap-2 mt-3 sm:gap-4">
                           <span className="text-xs text-[#2CC295] font-semibold bg-[#2CC295]/10 px-2.5 py-1 rounded-full">
                             {s.doctorCount} médicos
                           </span>
@@ -99,10 +100,8 @@ export default function EspecialidadesPage() {
                           {specDoctors.length === 0 ? (
                             <p className="text-xs text-[#8A9390]">Nenhum médico cadastrado nessa especialidade.</p>
                           ) : specDoctors.map((d) => (
-                            <div key={d.id} className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2CC295]/60 to-[#03624C] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                              </div>
+                            <div key={d.id} className="flex flex-col gap-3 rounded-xl border border-[#E8EDE9] p-3 sm:flex-row sm:items-center sm:border-0 sm:p-0">
+                              <DoctorAvatar doctor={d} size="sm" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-[#000F11] truncate">{d.name}</p>
                                 <div className="flex items-center gap-1">
@@ -110,13 +109,13 @@ export default function EspecialidadesPage() {
                                   <span className="text-[10px] text-[#8A9390]">{d.rating}</span>
                                 </div>
                               </div>
-                              <Link href={`/agendar?doctor=${d.id}`}>
-                                <Button size="sm" variant="outline">Agendar</Button>
+                              <Link href={`/agendar?doctor=${d.id}`} className="sm:flex-shrink-0">
+                                <Button size="sm" variant="outline" className="w-full sm:w-auto">Agendar</Button>
                               </Link>
                             </div>
                           ))}
-                          <Link href={`/agendar?specialty=${s.id}`} className="block mt-2">
-                            <Button className="w-full" size="sm">
+                          <Link href={`/agendar?specialty=${s.id}`} className="flex mt-2 sm:justify-end">
+                            <Button className="w-full sm:w-auto sm:px-5" size="sm">
                               <Calendar className="w-3.5 h-3.5" /> Agendar em {s.name}
                             </Button>
                           </Link>

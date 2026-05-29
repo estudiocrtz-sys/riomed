@@ -26,7 +26,7 @@ export const specialties: Specialty[] = [
     name: 'Clínica Geral',
     description: 'Atendimento primário, check-ups e acompanhamento geral de saúde.',
     iconName: 'Stethoscope',
-    doctorCount: 4,
+    doctorCount: 2,
     avgWaitDays: 2,
     color: '#2CC295',
   },

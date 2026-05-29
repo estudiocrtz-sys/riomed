@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { DoctorAvatar } from '@/components/ui/DoctorAvatar'
 import { StaggerContainer } from '@/components/motion/StaggerContainer'
 import { StaggerItem } from '@/components/motion/StaggerItem'
 import { AnimatedCard } from '@/components/motion/AnimatedCard'
@@ -13,8 +15,21 @@ import { doctors } from '@/data/doctors'
 import { specialties } from '@/data/specialties'
 import { units } from '@/data/units'
 import { overlayVariants, modalVariants } from '@/lib/motion'
-import { Search, Star, Clock, MapPin, Calendar, X } from 'lucide-react'
+import { Search, Star, Clock, MapPin, Calendar, X, Building2 } from 'lucide-react'
 import type { Doctor } from '@/data/doctors'
+
+const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+function getNextAvailability(doctor: Doctor) {
+  const todayName = weekdayNames[new Date().getDay()]
+  const firstSlot = doctor.timeSlots[0]
+
+  if (doctor.availableDays.includes(todayName)) {
+    return `Hoje, ${firstSlot}`
+  }
+
+  return `${doctor.availableDays[0]}, ${firstSlot}`
+}
 
 function DoctorModal({ doctor, onClose }: { doctor: Doctor | null; onClose: () => void }) {
   const doctorUnits = doctor ? units.filter((u) => doctor.unitIds.includes(u.id)) : []
@@ -46,16 +61,14 @@ function DoctorModal({ doctor, onClose }: { doctor: Doctor | null; onClose: () =
             <div className="bg-white rounded-2xl border border-[#E8EDE9] w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto pointer-events-auto">
               <div className="flex items-start justify-between p-6 border-b border-[#E8EDE9]">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2CC295] to-[#03624C] flex items-center justify-center text-white text-lg font-bold">
-                    {doctor.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                  </div>
+                  <DoctorAvatar doctor={doctor} size="lg" />
                   <div>
                     <h2 className="text-lg font-bold text-[#000F11]">{doctor.name}</h2>
                     <p className="text-sm text-[#2CC295] font-medium">{doctor.specialty}</p>
                     <p className="text-xs text-[#8A9390]">{doctor.crm}</p>
                   </div>
                 </div>
-                <button onClick={onClose} className="p-2 rounded-xl hover:bg-[#F7F6F6] text-[#8A9390] transition-colors">
+                <button onClick={onClose} className="p-2 rounded-xl hover:bg-[#F7F6F6] text-[#8A9390] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -73,6 +86,11 @@ function DoctorModal({ doctor, onClose }: { doctor: Doctor | null; onClose: () =
                 </div>
 
                 <p className="text-sm text-[#8A9390]">{doctor.bio}</p>
+
+                <div className="rounded-2xl border border-[#2CC295]/20 bg-[#2CC295]/5 p-4">
+                  <p className="text-xs font-semibold text-[#03624C] uppercase tracking-wide">Próximo horário</p>
+                  <p className="mt-1 text-sm font-bold text-[#000F11]">{getNextAvailability(doctor)}</p>
+                </div>
 
                 <div>
                   <p className="text-xs font-semibold text-[#8A9390] uppercase tracking-wider mb-2">Formação</p>
@@ -123,37 +141,81 @@ function DoctorModal({ doctor, onClose }: { doctor: Doctor | null; onClose: () =
 export default function MedicosPage() {
   const [search, setSearch] = useState('')
   const [specialtyFilter, setSpecialtyFilter] = useState('todos')
+  const [unitFilter, setUnitFilter] = useState('todas')
+  const [onlyToday, setOnlyToday] = useState(false)
   const [selected, setSelected] = useState<Doctor | null>(null)
+  const todayName = weekdayNames[new Date().getDay()]
 
   const filtered = doctors.filter((d) => {
     const matchSearch =
       d.name.toLowerCase().includes(search.toLowerCase()) ||
       d.specialty.toLowerCase().includes(search.toLowerCase())
     const matchSpec = specialtyFilter === 'todos' || d.specialtyId === specialtyFilter
-    return matchSearch && matchSpec
+    const matchUnit = unitFilter === 'todas' || d.unitIds.includes(unitFilter)
+    const matchToday = !onlyToday || d.availableDays.includes(todayName)
+    return matchSearch && matchSpec && matchUnit && matchToday
   })
+
+  function clearFilters() {
+    setSearch('')
+    setSpecialtyFilter('todos')
+    setUnitFilter('todas')
+    setOnlyToday(false)
+  }
 
   return (
     <AppShell>
       <Header title="Médicos" subtitle="Conheça nossa equipe de especialistas" />
-      <div className="flex-1 p-8 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 max-w-sm">
+        <div className="space-y-3 rounded-2xl border border-[#E8EDE9] bg-white p-3 shadow-sm shadow-[#000F11]/[0.02]">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative min-w-64 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A9390]" />
             <input
               type="text"
               placeholder="Buscar médico ou especialidade..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full pl-9 pr-4 rounded-xl bg-white border border-[#D0DDD6] text-sm focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
+              className="h-10 w-full pl-9 pr-4 rounded-xl bg-white border border-[#D0DDD6] text-sm text-[#000F11] placeholder:text-[#8A9390] focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
             />
           </div>
-          <div className="relative flex items-center gap-1 bg-white border border-[#D0DDD6] rounded-xl p-1 flex-wrap">
+          <select
+            value={unitFilter}
+            onChange={(e) => setUnitFilter(e.target.value)}
+            className="h-10 rounded-xl border border-[#D0DDD6] bg-white px-3 text-sm text-[#000F11] focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295] lg:w-56"
+          >
+            <option value="todas">Todas as unidades</option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>{unit.shortName}</option>
+            ))}
+          </select>
+          <label className={`flex h-10 cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 text-sm font-semibold transition-colors lg:w-40 ${
+            onlyToday ? 'border-[#2CC295]/40 bg-[#2CC295]/10 text-[#03624C]' : 'border-[#D0DDD6] bg-white text-[#5F6A67] hover:border-[#8A9390]'
+          }`}>
+            <input
+              type="checkbox"
+              checked={onlyToday}
+              onChange={(e) => setOnlyToday(e.target.checked)}
+              className="sr-only"
+            />
+            <span>Atende hoje</span>
+            <span className={`relative h-5 w-9 rounded-full transition-colors ${onlyToday ? 'bg-[#2CC295]' : 'bg-[#D0DDD6]'}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${onlyToday ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </span>
+          </label>
+          </div>
+
+          <div className="flex items-center gap-2 border-t border-[#F7F6F6] pt-3">
+            <div className="hidden items-center gap-1.5 text-xs font-semibold text-[#8A9390] lg:flex">
+              <Building2 className="h-3.5 w-3.5" />
+              Especialidade
+            </div>
+            <div className="relative flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl bg-[#F7F6F6] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setSpecialtyFilter('todos')}
-              className="relative px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 z-10"
+              className="relative z-10 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50"
               style={{ color: specialtyFilter === 'todos' ? 'white' : '#8A9390' }}
             >
               {specialtyFilter === 'todos' && (
@@ -169,7 +231,7 @@ export default function MedicosPage() {
               <button
                 key={s.id}
                 onClick={() => setSpecialtyFilter(s.id)}
-                className="relative px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 z-10"
+                className="relative z-10 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50"
                 style={{ color: specialtyFilter === s.id ? 'white' : '#8A9390' }}
               >
                 {specialtyFilter === s.id && (
@@ -182,61 +244,73 @@ export default function MedicosPage() {
                 <span className="relative z-10">{s.name}</span>
               </button>
             ))}
+            </div>
           </div>
         </div>
 
         {/* Doctor cards */}
-        <StaggerContainer key={`${specialtyFilter}-${search}`} className="grid grid-cols-3 gap-4">
-          {filtered.map((d) => {
-            const doctorUnits = units.filter((u) => d.unitIds.includes(u.id))
-            return (
-              <StaggerItem key={d.id}>
-                <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-5">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2CC295]/70 to-[#03624C] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={<Search />}
+            title="Nenhum médico encontrado"
+            description="Tente ajustar a busca, trocar a especialidade ou limpar os filtros para ver mais opções."
+            action={<Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>}
+          />
+        ) : (
+          <StaggerContainer key={`${specialtyFilter}-${unitFilter}-${onlyToday}-${search}`} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((d) => {
+              const doctorUnits = units.filter((u) => d.unitIds.includes(u.id))
+              return (
+                <StaggerItem key={d.id}>
+                  <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-5">
+                    <div className="flex items-start gap-4 mb-4">
+                      <DoctorAvatar doctor={d} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#000F11] truncate">{d.name}</p>
+                        <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
+                        <p className="text-[10px] text-[#8A9390]">{d.crm}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#000F11] truncate">{d.name}</p>
-                      <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
-                      <p className="text-[10px] text-[#8A9390]">{d.crm}</p>
+
+                    <div className="mb-3 flex items-center justify-between gap-3 rounded-xl bg-[#F7F6F6] px-3 py-2">
+                      <div>
+                        <p className="text-[10px] font-medium uppercase text-[#8A9390]">Próximo horário</p>
+                        <p className="text-xs font-bold text-[#000F11]">{getNextAvailability(d)}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-semibold text-[#000F11]">{d.rating}</span>
+                        <span className="text-[10px] text-[#8A9390]">({d.reviewCount})</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <p className="text-xs text-[#8A9390] mb-3 line-clamp-2">{d.bio}</p>
+                    <p className="text-xs text-[#5F6A67] mb-3 line-clamp-2">{d.bio}</p>
 
-                  <div className="flex items-center gap-1 mb-3">
-                    {[1,2,3,4,5].map((i) => (
-                      <Star key={i} className={`w-3 h-3 ${i <= Math.round(d.rating) ? 'fill-amber-400 text-amber-400' : 'text-[#D0DDD6]'}`} />
-                    ))}
-                    <span className="text-xs font-semibold text-[#000F11] ml-1">{d.rating}</span>
-                    <span className="text-[10px] text-[#8A9390]">({d.reviewCount})</span>
-                  </div>
-
-                  <div className="space-y-1.5 mb-4">
-                    <div className="flex items-center gap-1.5 text-[10px] text-[#8A9390]">
-                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>{d.availableDays.join(' · ')}</span>
+                    <div className="space-y-1.5 mb-4">
+                      <div className="flex items-center gap-1.5 text-[10px] text-[#5F6A67]">
+                        <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{d.availableDays.join(' · ')}</span>
+                      </div>
+                      <div className="flex items-start gap-1.5 text-[10px] text-[#5F6A67]">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        <span className="line-clamp-1">{doctorUnits.map(u => u.shortName).join(', ')}</span>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-[#8A9390]">
-                      <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span className="line-clamp-1">{doctorUnits.map(u => u.shortName).join(', ')}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelected(d)}>
-                      Ver perfil
-                    </Button>
-                    <Link href={`/agendar?doctor=${d.id}`} className="flex-1">
-                      <Button size="sm" className="w-full">Agendar</Button>
-                    </Link>
-                  </div>
-                </AnimatedCard>
-              </StaggerItem>
-            )
-          })}
-        </StaggerContainer>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelected(d)}>
+                        Ver perfil
+                      </Button>
+                      <Link href={`/agendar?doctor=${d.id}`} className="flex-1">
+                        <Button size="sm" className="w-full">Agendar</Button>
+                      </Link>
+                    </div>
+                  </AnimatedCard>
+                </StaggerItem>
+              )
+            })}
+          </StaggerContainer>
+        )}
 
       </div>
 

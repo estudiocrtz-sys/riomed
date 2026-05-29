@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
+import { DoctorAvatar } from '@/components/ui/DoctorAvatar'
 import { StaggerContainer } from '@/components/motion/StaggerContainer'
 import { StaggerItem } from '@/components/motion/StaggerItem'
 import { units } from '@/data/units'
@@ -19,7 +20,7 @@ export default function UnidadesPage() {
   return (
     <AppShell>
       <Header title="Unidades" subtitle="Encontre a unidade RIOMed mais próxima de você" />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8">
         <StaggerContainer className="space-y-4">
           {units.map((u) => {
             const unitDoctors = getDoctorsByUnit(u.id)
@@ -31,16 +32,16 @@ export default function UnidadesPage() {
 
                   {/* Header row */}
                   <button
-                    className="w-full flex items-start gap-5 p-6 text-left hover:bg-[#F7F6F6] transition-colors"
+                    className="w-full flex flex-col gap-4 p-4 text-left hover:bg-[#F7F6F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 sm:p-6 md:flex-row md:items-start md:gap-5"
                     onClick={() => setExpanded(isExpanded ? null : u.id)}
                   >
                     <div className="w-12 h-12 rounded-2xl bg-[#F7F6F6] border border-[#E8EDE9] flex items-center justify-center flex-shrink-0">
                       <MapPin className="w-6 h-6 text-[#03624C]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
+                      <div className="flex flex-col gap-2 mb-1 sm:flex-row sm:items-center sm:gap-3">
                         <p className="text-base font-bold text-[#000F11]">{u.name}</p>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {u.parking && (
                             <span className="flex items-center gap-1 text-[10px] bg-[#F7F6F6] text-[#8A9390] px-2 py-0.5 rounded-full border border-[#E8EDE9]">
                               <ParkingCircle className="w-3 h-3" /> Estacionamento
@@ -56,9 +57,9 @@ export default function UnidadesPage() {
                       <p className="text-sm text-[#8A9390]">{u.address} · {u.neighborhood}</p>
                       <p className="text-xs text-[#2CC295] font-medium mt-1">{u.hours.split('|')[0]}</p>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex w-full items-center gap-3 md:w-auto md:flex-shrink-0">
                       <Link href={`/agendar?unit=${u.id}`} onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm"><Calendar className="w-3.5 h-3.5" /> Agendar</Button>
+                        <Button size="sm" className="w-full md:w-auto"><Calendar className="w-3.5 h-3.5" /> Agendar</Button>
                       </Link>
                       <motion.div
                         animate={{ rotate: isExpanded ? 180 : 0 }}
@@ -80,7 +81,7 @@ export default function UnidadesPage() {
                         transition={{ duration: 0.25, ease: EASE_PREMIUM }}
                         className="overflow-hidden"
                       >
-                        <div className="border-t border-[#F7F6F6] p-6 grid grid-cols-3 gap-6">
+                        <div className="border-t border-[#F7F6F6] p-4 grid gap-6 sm:p-6 lg:grid-cols-3">
                           {/* Contact & Hours */}
                           <div className="space-y-4">
                             <div>
@@ -98,7 +99,7 @@ export default function UnidadesPage() {
                               <p className="text-xs font-semibold text-[#8A9390] uppercase tracking-wider mb-2">Horários</p>
                               <div className="space-y-1.5">
                                 {u.hoursDetail.map((h) => (
-                                  <div key={h.day} className="flex items-center justify-between text-sm">
+                                  <div key={h.day} className="flex items-center justify-between gap-3 text-sm">
                                     <span className="text-[#000F11] font-medium">{h.day}</span>
                                     <span className={h.time === 'Fechado' ? 'text-red-500' : 'text-[#8A9390]'}>{h.time}</span>
                                   </div>
@@ -125,9 +126,7 @@ export default function UnidadesPage() {
                             <div className="space-y-2">
                               {unitDoctors.map((d) => (
                                 <div key={d.id} className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2CC295]/60 to-[#03624C] flex items-center justify-center text-white text-xs font-bold">
-                                    {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                                  </div>
+                                  <DoctorAvatar doctor={d} size="sm" />
                                   <div className="min-w-0">
                                     <p className="text-xs font-medium text-[#000F11] truncate">{d.name}</p>
                                     <p className="text-[10px] text-[#2CC295]">{d.specialty}</p>

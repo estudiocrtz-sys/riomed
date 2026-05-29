@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { StaggerContainer } from '@/components/motion/StaggerContainer'
 import { StaggerItem } from '@/components/motion/StaggerItem'
 import { AnimatedCard } from '@/components/motion/AnimatedCard'
-import { ChevronDown, ChevronUp, MessageSquare, Phone, Mail } from 'lucide-react'
+import { ChevronDown, MessageSquare, Phone, Mail } from 'lucide-react'
 import { EASE_PREMIUM } from '@/lib/motion'
 
 const faqs = [
@@ -34,18 +34,18 @@ export default function AjudaPage() {
   return (
     <AppShell>
       <Header title="Ajuda" subtitle="Dúvidas frequentes e suporte" />
-      <div className="flex-1 p-8">
-        <div className="grid grid-cols-3 gap-8">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="grid gap-8 xl:grid-cols-3">
 
           {/* FAQ */}
-          <div className="col-span-2">
+          <div className="xl:col-span-2">
             <h2 className="text-base font-semibold text-[#000F11] mb-5">Perguntas Frequentes</h2>
             <StaggerContainer className="space-y-3">
               {faqs.map((faq, i) => (
                 <StaggerItem key={i}>
                   <div className="bg-white rounded-2xl border border-[#E8EDE9] overflow-hidden">
                     <button
-                      className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-[#F7F6F6] transition-colors"
+                      className="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-[#F7F6F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 sm:px-5"
                       onClick={() => setExpanded(expanded === i ? null : i)}
                     >
                       <span className="flex-1 text-sm font-medium text-[#000F11]">{faq.q}</span>
@@ -83,7 +83,7 @@ export default function AjudaPage() {
           {/* Support contacts */}
           <div>
             <h2 className="text-base font-semibold text-[#000F11] mb-4">Fale Conosco</h2>
-            <StaggerContainer className="space-y-4">
+            <StaggerContainer className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
               {contacts.map(({ icon: Icon, title, info, sub, action }) => (
                 <StaggerItem key={title}>
                   <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-5">

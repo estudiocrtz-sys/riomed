@@ -7,10 +7,14 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
 import { BackButton } from '@/components/ui/BackButton'
+import { DoctorAvatar } from '@/components/ui/DoctorAvatar'
+import { useToast } from '@/components/ui/ToastProvider'
 import { specialties, getSpecialtyById } from '@/data/specialties'
 import { specialtyIconMap } from '@/lib/specialty-icons'
 import { doctors, getDoctorsBySpecialty, getDoctorById } from '@/data/doctors'
+import { myAppointments } from '@/data/appointments'
 import { units, getUnitById } from '@/data/units'
+import { STORAGE_KEYS, usePersistentState } from '@/lib/local-storage'
 import {
   Check, Star, MapPin, Clock, Calendar, CheckCircle2,
 } from 'lucide-react'
@@ -22,8 +26,10 @@ const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', '
 
 function generateDates() {
   const dates = []
-  const today = new Date(2024, 4, 26) // 26/05/2024
-  for (let i = 1; i <= 30; i++) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let i = 0; i < 30; i++) {
     const d = new Date(today)
     d.setDate(today.getDate() + i)
     if (d.getDay() !== 0) dates.push(d) // skip Sunday
@@ -93,6 +99,8 @@ function BookingContent() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [specialtySearch, setSpecialtySearch] = useState('')
+  const [, setAppointments] = usePersistentState(STORAGE_KEYS.appointments, myAppointments)
+  const { showToast } = useToast()
 
   const filteredSpecialties = specialties.filter((s) =>
     s.name.toLowerCase().includes(specialtySearch.toLowerCase())
@@ -110,12 +118,37 @@ function BookingContent() {
     ? units.filter((u) => doctor?.unitIds.includes(u.id))
     : units
 
+  function confirmAppointment() {
+    if (!doctor || !specialty || !unit || !selectedDate || !selectedTime) return
+
+    const appointment = {
+      id: `local-${doctor.id}-${unit.id}-${selectedDate.toISOString().split('T')[0]}-${selectedTime}`,
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      specialty: specialty.name,
+      specialtyId: specialty.id,
+      unitId: unit.id,
+      unitName: unit.name,
+      date: selectedDate.toISOString().split('T')[0],
+      time: selectedTime,
+      type: 'Consulta',
+      status: 'agendada' as const,
+    }
+
+    setAppointments((current) => [appointment, ...current])
+    setConfirmed(true)
+    showToast({
+      title: 'Consulta agendada',
+      description: `${doctor.name} às ${selectedTime}.`,
+    })
+  }
+
   if (confirmed) {
     return (
       <AppShell>
         <Header title="Agendar Consulta" />
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="bg-white rounded-3xl border border-[#E8EDE9] p-12 max-w-md w-full text-center shadow-lg">
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+          <div className="bg-white rounded-3xl border border-[#E8EDE9] p-6 sm:p-12 max-w-md w-full text-center shadow-lg">
             <AnimatedSuccessCheck />
             <h2 className="text-2xl font-bold text-[#000F11] mb-2">Consulta Agendada!</h2>
             <p className="text-[#8A9390] mb-6">
@@ -128,7 +161,7 @@ function BookingContent() {
               <p className="text-sm"><span className="text-[#8A9390]">Data:</span> <span className="font-semibold text-[#000F11]">{selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</span></p>
               <p className="text-sm"><span className="text-[#8A9390]">Horário:</span> <span className="font-semibold text-[#000F11]">{selectedTime}</span></p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <a href="/minhas-consultas" className="flex-1">
                 <Button variant="outline" className="w-full">Ver minhas consultas</Button>
               </a>
@@ -146,9 +179,10 @@ function BookingContent() {
     <AppShell>
       <Header title="Agendar Consulta" subtitle="Escolha as opções abaixo para agendar sua consulta" />
 
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8">
         {/* Steps indicator */}
-        <div className="flex items-center gap-0 mb-8">
+        <div className="mb-8 overflow-x-auto pb-2">
+        <div className="flex min-w-[680px] items-center gap-0">
           {stepLabels.map((label, i) => {
             const n = (i + 1) as Step
             const done = n < step
@@ -174,6 +208,7 @@ function BookingContent() {
             )
           })}
         </div>
+        </div>
 
         {/* Step 1: Specialty */}
         {step === 1 && (
@@ -188,12 +223,12 @@ function BookingContent() {
               onChange={(e) => setSpecialtySearch(e.target.value)}
               className="h-9 w-full max-w-sm px-4 rounded-xl bg-white border border-[#D0DDD6] text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
             />
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {filteredSpecialties.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => { setSelectedSpecialty(s.id); setStep(2) }}
-                  className={`bg-white rounded-2xl border p-5 text-left hover:shadow-md transition-all ${
+                  className={`bg-white rounded-2xl border p-4 sm:p-5 text-left hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                     selectedSpecialty === s.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9] hover:border-[#2CC295]/40'
                   }`}
                 >
@@ -226,19 +261,17 @@ function BookingContent() {
             <BackButton onClick={() => setStep(1)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha o médico</h2>
             <p className="text-sm text-[#8A9390] mb-5">Profissionais disponíveis em {specialty?.name ?? 'todas as especialidades'}.</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 lg:grid-cols-2">
               {availableDoctors.map((d) => (
                 <button
                   key={d.id}
                   onClick={() => { setSelectedDoctor(d.id); setStep(3) }}
-                  className={`bg-white rounded-2xl border p-5 text-left hover:shadow-md transition-all ${
+                  className={`bg-white rounded-2xl border p-4 sm:p-5 text-left hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                     selectedDoctor === d.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9]'
                   }`}
                 >
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2CC295]/70 to-[#03624C] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {d.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                    </div>
+                    <DoctorAvatar doctor={d} />
                     <div>
                       <p className="text-sm font-bold text-[#000F11]">{d.name}</p>
                       <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
@@ -246,7 +279,7 @@ function BookingContent() {
                     </div>
                   </div>
                   <p className="text-xs text-[#8A9390] mb-3 line-clamp-2">{d.bio}</p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span className="text-xs font-semibold text-[#000F11]">{d.rating}</span>
@@ -269,12 +302,12 @@ function BookingContent() {
             <BackButton onClick={() => setStep(2)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a unidade</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione a unidade mais conveniente para você.</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 lg:grid-cols-2">
               {availableUnits.map((u) => (
                 <button
                   key={u.id}
                   onClick={() => { setSelectedUnit(u.id); setStep(4) }}
-                  className={`bg-white rounded-2xl border p-5 text-left hover:shadow-md transition-all ${
+                  className={`bg-white rounded-2xl border p-4 sm:p-5 text-left hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                     selectedUnit === u.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9]'
                   }`}
                 >
@@ -305,20 +338,27 @@ function BookingContent() {
             <BackButton onClick={() => setStep(3)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a data</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione uma data disponível para sua consulta.</p>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-7">
               {availableDates.map((d, i) => {
                 const isSelected = selectedDate?.toDateString() === d.toDateString()
+                const isToday = d.toDateString() === new Date().toDateString()
                 const isWeekend = d.getDay() === 6
                 return (
                   <button
                     key={i}
                     onClick={() => { setSelectedDate(d); setStep(5) }}
-                    className={`rounded-2xl border p-3 text-center transition-all hover:shadow-md ${
+                    className={`rounded-2xl border p-3 text-center transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                       isSelected ? 'bg-[#03624C] border-[#03624C] text-white' :
+                      isToday ? 'bg-[#2CC295]/10 border-[#2CC295] ring-2 ring-[#2CC295]/20' :
                       isWeekend ? 'bg-amber-50 border-amber-100 hover:border-amber-300' :
                       'bg-white border-[#E8EDE9] hover:border-[#2CC295]/40'
                     }`}
                   >
+                    {isToday && (
+                      <span className="mb-1 inline-flex rounded-full bg-[#2CC295] px-2 py-0.5 text-[9px] font-bold uppercase text-[#000F11]">
+                        Hoje
+                      </span>
+                    )}
                     <p className={`text-[10px] font-medium mb-1 ${isSelected ? 'text-white/70' : 'text-[#8A9390]'}`}>
                       {DAYS[d.getDay()]}
                     </p>
@@ -343,12 +383,12 @@ function BookingContent() {
             <p className="text-sm text-[#8A9390] mb-5">
               Horários disponíveis para {selectedDate?.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}.
             </p>
-            <div className="grid grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {(doctor?.timeSlots ?? ['08:00','08:30','09:00','09:30','10:00','10:30','14:00','14:30']).map((t: string) => (
                 <button
                   key={t}
                   onClick={() => { setSelectedTime(t); setStep(6) }}
-                  className={`rounded-2xl border p-4 text-center text-sm font-semibold transition-all hover:shadow-md ${
+                  className={`rounded-2xl border p-4 text-center text-sm font-semibold transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                     selectedTime === t ? 'bg-[#03624C] border-[#03624C] text-white' : 'bg-white border-[#E8EDE9] text-[#000F11] hover:border-[#2CC295]/40'
                   }`}
                 >
@@ -366,11 +406,9 @@ function BookingContent() {
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Confirmar agendamento</h2>
             <p className="text-sm text-[#8A9390] mb-5">Revise os detalhes antes de confirmar.</p>
 
-            <div className="bg-white rounded-2xl border border-[#E8EDE9] p-6 space-y-4 mb-6">
+            <div className="bg-white rounded-2xl border border-[#E8EDE9] p-4 sm:p-6 space-y-4 mb-6">
               <div className="flex items-center gap-4 pb-4 border-b border-[#F7F6F6]">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2CC295]/70 to-[#03624C] flex items-center justify-center text-white font-bold">
-                  {doctor?.name.replace(/^Dr[a]?\. /, '').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                </div>
+                {doctor && <DoctorAvatar doctor={doctor} />}
                 <div>
                   <p className="font-bold text-[#000F11]">{doctor?.name}</p>
                   <p className="text-sm text-[#2CC295]">{specialty?.name}</p>
@@ -398,7 +436,7 @@ function BookingContent() {
               Você receberá uma confirmação por e-mail e SMS com os detalhes da consulta.
             </div>
 
-            <Button className="w-full" size="lg" onClick={() => setConfirmed(true)}>
+            <Button className="w-full" size="lg" onClick={confirmAppointment}>
               <CheckCircle2 className="w-5 h-5" /> Confirmar Agendamento
             </Button>
           </div>

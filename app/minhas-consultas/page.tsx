@@ -8,8 +8,10 @@ import { Header } from '@/components/layout/Header'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { useToast } from '@/components/ui/ToastProvider'
 import { myAppointments } from '@/data/appointments'
 import { overlayVariants, modalVariants } from '@/lib/motion'
+import { STORAGE_KEYS, usePersistentState } from '@/lib/local-storage'
 import { Calendar, MapPin, Clock, FileText, RotateCcw, X } from 'lucide-react'
 import type { Appointment } from '@/data/appointments'
 
@@ -92,7 +94,7 @@ function CancelAppointmentModal({
             exit="exit"
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="w-full max-w-md rounded-3xl border border-[#E8EDE9] bg-white p-7 text-center shadow-2xl pointer-events-auto">
+            <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-[#E8EDE9] bg-white p-7 text-center shadow-2xl pointer-events-auto">
               {success ? (
                 <>
                   <AnimatedSuccessCheck />
@@ -129,13 +131,8 @@ export default function MinhasConsultasPage() {
   const [activeTab, setActiveTab] = useState<'proximas' | 'anteriores' | 'canceladas'>('proximas')
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [cancelSuccess, setCancelSuccess] = useState(false)
-  const [cancelledIds, setCancelledIds] = useState<string[]>([])
-
-  const appointments = myAppointments.map((appointment) =>
-    cancelledIds.includes(appointment.id)
-      ? { ...appointment, status: 'cancelada' as const, notes: 'Cancelada pelo paciente.' }
-      : appointment
-  )
+  const [appointments, setAppointments] = usePersistentState(STORAGE_KEYS.appointments, myAppointments)
+  const { showToast } = useToast()
 
   const proximas   = appointments.filter((a) => ['agendada', 'confirmada'].includes(a.status)).sort((a, b) => a.date.localeCompare(b.date))
   const anteriores = appointments.filter((a) => a.status === 'concluida').sort((a, b) => b.date.localeCompare(a.date))
@@ -145,8 +142,18 @@ export default function MinhasConsultasPage() {
 
   function handleConfirmCancel() {
     if (!cancelTarget) return
-    setCancelledIds((ids) => [...new Set([...ids, cancelTarget.id])])
+    setAppointments((current) =>
+      current.map((appointment) =>
+        appointment.id === cancelTarget.id
+          ? { ...appointment, status: 'cancelada' as const, notes: 'Cancelada pelo paciente.' }
+          : appointment
+      )
+    )
     setCancelSuccess(true)
+    showToast({
+      title: 'Consulta cancelada',
+      description: 'A consulta foi movida para canceladas.',
+    })
   }
 
   function handleCloseCancelModal() {
@@ -166,10 +173,10 @@ export default function MinhasConsultasPage() {
         }
       />
 
-      <div className="flex-1 p-8 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Tabs */}
-        <div className="relative flex items-center gap-1 bg-white border border-[#E8EDE9] rounded-2xl p-1.5 w-fit">
+        <div className="relative flex w-full items-center gap-1 overflow-x-auto bg-white border border-[#E8EDE9] rounded-2xl p-1.5 sm:w-fit">
           {tabs.map((tab) => {
             const count = tab.value === 'proximas' ? proximas.length : tab.value === 'anteriores' ? anteriores.length : canceladas.length
             const active = activeTab === tab.value
@@ -178,7 +185,7 @@ export default function MinhasConsultasPage() {
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
-                className="relative px-5 py-2 rounded-xl text-sm font-medium transition-colors duration-200 z-10"
+                className="relative z-10 whitespace-nowrap px-5 py-2 rounded-xl text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50"
                 style={{ color: active ? 'white' : '#8A9390' }}
               >
                 {/* Sliding background */}
@@ -228,7 +235,7 @@ export default function MinhasConsultasPage() {
                 transition={{ duration: 0.18 }}
                 className="bg-white rounded-2xl border border-[#E8EDE9] p-5"
               >
-                <div className="flex items-start gap-5">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start">
                   {/* Date block */}
                   <div className="flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-[#F7F6F6] border border-[#E8EDE9]">
                     <span className="text-lg font-bold text-[#000F11] leading-none">
@@ -263,16 +270,16 @@ export default function MinhasConsultasPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col gap-2 flex-shrink-0">
+                  <div className="flex flex-row gap-2 md:flex-col md:flex-shrink-0">
                     {activeTab === 'proximas' && (
                       <>
                         <Link href="/agendar">
-                          <Button variant="outline" size="sm" className="gap-1.5"><RotateCcw className="w-3.5 h-3.5" /> Remarcar</Button>
+                          <Button variant="outline" size="sm" className="w-full gap-1.5 md:w-auto"><RotateCcw className="w-3.5 h-3.5" /> Remarcar</Button>
                         </Link>
                         <Button
                           variant="danger"
                           size="sm"
-                          className="gap-1.5"
+                          className="flex-1 gap-1.5 md:flex-none"
                           onClick={() => setCancelTarget(apt)}
                         >
                           <X className="w-3.5 h-3.5" /> Cancelar
