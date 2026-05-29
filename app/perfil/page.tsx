@@ -77,6 +77,8 @@ export default function PerfilPage() {
   const [saved, setSaved] = useState(false)
   const [patient, setPatient] = usePersistentState<PatientProfile>(STORAGE_KEYS.patient, currentPatient)
   const { showToast } = useToast()
+  const activeSectionInfo = sections.find((section) => section.id === activeSection) ?? sections[0]
+  const ActiveSectionIcon = activeSectionInfo.icon
 
   function updatePatient<K extends keyof PatientProfile>(key: K, value: PatientProfile[K]) {
     setPatient((current) => ({ ...current, [key]: value }))
@@ -125,7 +127,20 @@ export default function PerfilPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:block lg:space-y-1">
+            <div className="relative mb-4 lg:hidden">
+              <select
+                value={activeSection}
+                onChange={(event) => setActiveSection(event.target.value)}
+                className="h-11 w-full appearance-none rounded-xl border border-[#D0DDD6] bg-white px-3 pr-10 text-sm font-semibold text-[#000F11] focus:border-[#2CC295] focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30"
+              >
+                {sections.map(({ id, label }) => (
+                  <option key={id} value={id}>{label}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A9390]" />
+            </div>
+
+            <div className="hidden lg:block lg:space-y-1">
             {sections.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -142,6 +157,10 @@ export default function PerfilPage() {
 
           {/* Content */}
           <div className="lg:col-span-3">
+            <div className="mb-3 flex items-center gap-2 rounded-2xl border border-[#E8EDE9] bg-white px-4 py-3 lg:hidden">
+              <ActiveSectionIcon className="h-4 w-4 text-[#03624C]" />
+              <p className="text-sm font-bold text-[#000F11]">{activeSectionInfo.label}</p>
+            </div>
             {activeSection === 'dados' && (
               <div className="bg-white rounded-2xl border border-[#E8EDE9] p-6 space-y-5">
                 <h2 className="text-base font-semibold text-[#000F11]">Dados Pessoais</h2>

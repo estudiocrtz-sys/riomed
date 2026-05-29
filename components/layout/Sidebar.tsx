@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -23,11 +24,11 @@ import { currentPatient } from '@/data/patient'
 import { STORAGE_KEYS, usePersistentState } from '@/lib/local-storage'
 
 const navItems = [
-  { href: '/inicio', label: 'Início', icon: Home },
-  { href: '/agendar', label: 'Agendar Consulta', icon: CalendarPlus },
-  { href: '/minhas-consultas', label: 'Minhas Consultas', icon: Calendar },
-  { href: '/medicos', label: 'Médicos', icon: Stethoscope },
-  { href: '/especialidades', label: 'Especialidades', icon: Heart },
+  { href: '/inicio', label: 'Início', mobileLabel: 'Início', icon: Home },
+  { href: '/agendar', label: 'Agendar Consulta', mobileLabel: 'Agendar', icon: CalendarPlus },
+  { href: '/minhas-consultas', label: 'Minhas Consultas', mobileLabel: 'Minhas Consultas', icon: Calendar },
+  { href: '/medicos', label: 'Médicos', mobileLabel: 'Médicos', icon: Stethoscope },
+  { href: '/especialidades', label: 'Especialidades', mobileLabel: 'Especialidades', icon: Heart },
   { href: '/unidades', label: 'Unidades', icon: MapPin },
   { href: '/exames', label: 'Exames e Documentos', icon: FileText },
   { href: '/notificacoes', label: 'Notificações', icon: Bell },
@@ -41,6 +42,11 @@ export function Sidebar() {
   const [patient] = usePersistentState(STORAGE_KEYS.patient, currentPatient)
   const unreadCount = storedNotifications.filter((n) => !n.read).length
   const patientInitials = patient.name.split(' ').map((part) => part[0]).slice(0, 2).join('')
+  const mobileItems = navItems.slice(0, 5)
+  const pathnameMobileHref =
+    mobileItems.find(({ href }) => pathname === href || pathname.startsWith(href + '/'))?.href ?? '/inicio'
+  const [pendingMobileHref, setPendingMobileHref] = useState<string | null>(null)
+  const activeMobileHref = pendingMobileHref ?? pathnameMobileHref
 
   return (
     <>
@@ -130,20 +136,29 @@ export function Sidebar() {
     </aside>
 
     <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 gap-1 border-t border-[#D0DDD6] bg-white/95 px-2 py-2 backdrop-blur lg:hidden">
-      {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(href + '/')
+      {mobileItems.map(({ href, mobileLabel, icon: Icon }) => {
+        const active = activeMobileHref === href
 
         return (
           <Link
             key={href}
             href={href}
+            onPointerDown={() => setPendingMobileHref(href)}
+            onFocus={() => setPendingMobileHref(href)}
             className={cn(
-              'flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50',
-              active ? 'bg-[#2CC295]/12 text-[#03624C]' : 'text-[#5F6A67] hover:bg-[#F7F6F6] hover:text-[#000F11]'
+              'relative flex min-h-12 flex-col items-center justify-center gap-1 overflow-hidden rounded-xl px-1 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50',
+              active ? 'text-[#03624C]' : 'text-[#5F6A67] hover:bg-[#F7F6F6] hover:text-[#000F11]'
             )}
           >
-            <Icon className="h-4 w-4" strokeWidth={active ? 2.4 : 1.8} />
-            <span className="max-w-full truncate">{label.replace(' Consulta', '')}</span>
+            {active && (
+              <motion.div
+                layoutId="mobile-nav-active-bg"
+                className="absolute inset-0 rounded-xl bg-[#2CC295]/12"
+                transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }}
+              />
+            )}
+            <Icon className="relative z-10 h-4 w-4" strokeWidth={active ? 2.4 : 1.8} />
+            <span className="relative z-10 max-w-full text-center leading-tight">{mobileLabel}</span>
           </Link>
         )
       })}

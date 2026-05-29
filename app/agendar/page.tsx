@@ -117,6 +117,18 @@ function BookingContent() {
   const availableUnits = selectedDoctor
     ? units.filter((u) => doctor?.unitIds.includes(u.id))
     : units
+  const currentStepLabel = stepLabels[step - 1]
+  const progressPercent = (step / stepLabels.length) * 100
+  const mobileSummaryItems = [
+    specialty && { label: 'Especialidade', value: specialty.name },
+    doctor && { label: 'Médico', value: doctor.name },
+    unit && { label: 'Unidade', value: unit.shortName },
+    selectedDate && {
+      label: 'Data',
+      value: selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', ''),
+    },
+    selectedTime && { label: 'Horário', value: selectedTime },
+  ].filter(Boolean) as { label: string; value: string }[]
 
   function confirmAppointment() {
     if (!doctor || !specialty || !unit || !selectedDate || !selectedTime) return
@@ -179,9 +191,43 @@ function BookingContent() {
     <AppShell>
       <Header title="Agendar Consulta" subtitle="Escolha as opções abaixo para agendar sua consulta" />
 
-      <div className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className={`flex-1 p-4 sm:p-6 lg:p-8 ${step === 6 ? 'pb-32 sm:pb-6 lg:pb-8' : ''}`}>
         {/* Steps indicator */}
-        <div className="mb-8 overflow-x-auto pb-2">
+        <div className="mb-6 rounded-2xl border border-[#E8EDE9] bg-white p-4 shadow-sm shadow-[#000F11]/[0.02] sm:hidden">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#8A9390]">Etapa {step} de {stepLabels.length}</p>
+              <p className="text-base font-bold text-[#000F11]">{currentStepLabel}</p>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#03624C] text-sm font-bold text-white">
+              {step}
+            </div>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[#E8EDE9]">
+            <motion.div
+              className="h-full rounded-full bg-[#2CC295]"
+              initial={false}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+            />
+          </div>
+        </div>
+
+        {mobileSummaryItems.length > 0 && step < 6 && (
+          <div className="-mt-2 mb-6 rounded-2xl border border-[#2CC295]/20 bg-[#2CC295]/5 p-3 sm:hidden">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#03624C]">Resumo</p>
+            <div className="flex snap-x gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {mobileSummaryItems.map((item) => (
+                <div key={item.label} className="min-w-fit snap-start rounded-xl bg-white px-3 py-2 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8A9390]">{item.label}</p>
+                  <p className="max-w-36 truncate text-xs font-bold text-[#000F11]">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-8 hidden overflow-x-auto pb-2 sm:block">
         <div className="flex min-w-[680px] items-center gap-0">
           {stepLabels.map((label, i) => {
             const n = (i + 1) as Step
@@ -216,19 +262,21 @@ function BookingContent() {
             <BackButton onClick={() => router.push('/inicio')} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a especialidade</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione a especialidade médica que você precisa.</p>
-            <input
-              type="text"
-              placeholder="Buscar especialidade..."
-              value={specialtySearch}
-              onChange={(e) => setSpecialtySearch(e.target.value)}
-              className="h-9 w-full max-w-sm px-4 rounded-xl bg-white border border-[#D0DDD6] text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
-            />
+            <div className="sticky top-[73px] z-20 -mx-4 mb-5 bg-[#F7F6F6]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+              <input
+                type="text"
+                placeholder="Buscar especialidade..."
+                value={specialtySearch}
+                onChange={(e) => setSpecialtySearch(e.target.value)}
+                className="h-11 w-full max-w-sm px-4 rounded-xl bg-white border border-[#D0DDD6] text-sm focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30 focus:border-[#2CC295]"
+              />
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {filteredSpecialties.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => { setSelectedSpecialty(s.id); setStep(2) }}
-                  className={`bg-white rounded-2xl border p-4 sm:p-5 text-left hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
+                  className={`relative min-h-[132px] bg-white rounded-2xl border p-4 sm:p-5 text-left hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
                     selectedSpecialty === s.id ? 'border-[#2CC295] ring-2 ring-[#2CC295]/20' : 'border-[#E8EDE9] hover:border-[#2CC295]/40'
                   }`}
                 >
@@ -278,7 +326,7 @@ function BookingContent() {
                       <p className="text-[10px] text-[#8A9390]">{d.crm}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-[#8A9390] mb-3 line-clamp-2">{d.bio}</p>
+                  <p className="hidden text-xs text-[#8A9390] mb-3 line-clamp-2 sm:block">{d.bio}</p>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -338,7 +386,7 @@ function BookingContent() {
             <BackButton onClick={() => setStep(3)} className="mb-6" />
             <h2 className="text-lg font-semibold text-[#000F11] mb-2">Escolha a data</h2>
             <p className="text-sm text-[#8A9390] mb-5">Selecione uma data disponível para sua consulta.</p>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-7">
+            <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 sm:pb-0 md:grid-cols-7 [&::-webkit-scrollbar]:hidden">
               {availableDates.map((d, i) => {
                 const isSelected = selectedDate?.toDateString() === d.toDateString()
                 const isToday = d.toDateString() === new Date().toDateString()
@@ -347,7 +395,7 @@ function BookingContent() {
                   <button
                     key={i}
                     onClick={() => { setSelectedDate(d); setStep(5) }}
-                    className={`rounded-2xl border p-3 text-center transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 ${
+                    className={`min-w-24 snap-start rounded-2xl border p-3 text-center transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50 sm:min-w-0 ${
                       isSelected ? 'bg-[#03624C] border-[#03624C] text-white' :
                       isToday ? 'bg-[#2CC295]/10 border-[#2CC295] ring-2 ring-[#2CC295]/20' :
                       isWeekend ? 'bg-amber-50 border-amber-100 hover:border-amber-300' :
@@ -436,9 +484,15 @@ function BookingContent() {
               Você receberá uma confirmação por e-mail e SMS com os detalhes da consulta.
             </div>
 
-            <Button className="w-full" size="lg" onClick={confirmAppointment}>
+            <Button className="hidden w-full sm:inline-flex" size="lg" onClick={confirmAppointment}>
               <CheckCircle2 className="w-5 h-5" /> Confirmar Agendamento
             </Button>
+
+            <div className="fixed bottom-[72px] left-0 right-0 z-40 border-t border-[#D0DDD6] bg-white/95 p-4 shadow-[0_-10px_30px_rgba(0,15,17,0.08)] backdrop-blur sm:hidden">
+              <Button className="w-full" size="lg" onClick={confirmAppointment}>
+                <CheckCircle2 className="w-5 h-5" /> Confirmar Agendamento
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -15,7 +15,7 @@ import { doctors } from '@/data/doctors'
 import { specialties } from '@/data/specialties'
 import { units } from '@/data/units'
 import { overlayVariants, modalVariants } from '@/lib/motion'
-import { Search, Star, Clock, MapPin, Calendar, X, Building2 } from 'lucide-react'
+import { Search, Star, Clock, MapPin, Calendar, X, Building2, SlidersHorizontal } from 'lucide-react'
 import type { Doctor } from '@/data/doctors'
 
 const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
@@ -144,7 +144,9 @@ export default function MedicosPage() {
   const [unitFilter, setUnitFilter] = useState('todas')
   const [onlyToday, setOnlyToday] = useState(false)
   const [selected, setSelected] = useState<Doctor | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const todayName = weekdayNames[new Date().getDay()]
+  const hasActiveFilters = search !== '' || specialtyFilter !== 'todos' || unitFilter !== 'todas' || onlyToday
 
   const filtered = doctors.filter((d) => {
     const matchSearch =
@@ -169,7 +171,28 @@ export default function MedicosPage() {
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Filters */}
-        <div className="space-y-3 rounded-2xl border border-[#E8EDE9] bg-white p-3 shadow-sm shadow-[#000F11]/[0.02]">
+        <div className="flex gap-2 lg:hidden">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A9390]" />
+            <input
+              type="text"
+              placeholder="Buscar médico..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-11 w-full rounded-xl border border-[#D0DDD6] bg-white pl-9 pr-4 text-sm text-[#000F11] placeholder:text-[#8A9390] focus:border-[#2CC295] focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30"
+            />
+          </div>
+          <button
+            onClick={() => setFiltersOpen(true)}
+            className="relative flex h-11 items-center gap-2 rounded-xl border border-[#D0DDD6] bg-white px-3 text-sm font-semibold text-[#000F11] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtros
+            {hasActiveFilters && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-[#2CC295]" />}
+          </button>
+        </div>
+
+        <div className="hidden space-y-3 rounded-2xl border border-[#E8EDE9] bg-white p-3 shadow-sm shadow-[#000F11]/[0.02] lg:block">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-64 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A9390]" />
@@ -227,7 +250,7 @@ export default function MedicosPage() {
               )}
               <span className="relative z-10">Todos</span>
             </button>
-            {specialties.slice(0, 6).map((s) => (
+            {specialties.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSpecialtyFilter(s.id)}
@@ -262,13 +285,13 @@ export default function MedicosPage() {
               const doctorUnits = units.filter((u) => d.unitIds.includes(u.id))
               return (
                 <StaggerItem key={d.id}>
-                  <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-5">
-                    <div className="flex items-start gap-4 mb-4">
+                  <AnimatedCard className="bg-white rounded-2xl border border-[#E8EDE9] p-4 sm:p-5">
+                    <div className="flex items-start gap-4 mb-3 sm:mb-4">
                       <DoctorAvatar doctor={d} />
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-[#000F11] truncate">{d.name}</p>
                         <p className="text-xs text-[#2CC295] font-medium">{d.specialty}</p>
-                        <p className="text-[10px] text-[#8A9390]">{d.crm}</p>
+                        <p className="hidden text-[10px] text-[#8A9390] sm:block">{d.crm}</p>
                       </div>
                     </div>
 
@@ -284,9 +307,9 @@ export default function MedicosPage() {
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#5F6A67] mb-3 line-clamp-2">{d.bio}</p>
+                    <p className="hidden text-xs text-[#5F6A67] mb-3 line-clamp-2 sm:block">{d.bio}</p>
 
-                    <div className="space-y-1.5 mb-4">
+                    <div className="mb-4 hidden space-y-1.5 sm:block">
                       <div className="flex items-center gap-1.5 text-[10px] text-[#5F6A67]">
                         <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>{d.availableDays.join(' · ')}</span>
@@ -315,6 +338,100 @@ export default function MedicosPage() {
       </div>
 
       <DoctorModal doctor={selected} onClose={() => setSelected(null)} />
+
+      <AnimatePresence>
+        {filtersOpen && (
+          <>
+            <motion.div
+              key="filters-overlay"
+              variants={overlayVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm lg:hidden"
+              onClick={() => setFiltersOpen(false)}
+            />
+            <motion.div
+              key="filters-sheet"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+              className="fixed inset-x-0 bottom-0 z-50 max-h-[82vh] overflow-y-auto rounded-t-3xl border border-[#E8EDE9] bg-white p-4 shadow-2xl lg:hidden"
+            >
+              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#D0DDD6]" />
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-lg font-bold text-[#000F11]">Filtros</p>
+                  <p className="text-xs text-[#8A9390]">Refine a busca por unidade e especialidade.</p>
+                </div>
+                <button
+                  onClick={() => setFiltersOpen(false)}
+                  className="rounded-xl p-2 text-[#8A9390] transition-colors hover:bg-[#F7F6F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2CC295]/50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#8A9390]">Unidade</label>
+                  <select
+                    value={unitFilter}
+                    onChange={(e) => setUnitFilter(e.target.value)}
+                    className="h-11 w-full rounded-xl border border-[#D0DDD6] bg-white px-3 text-sm text-[#000F11] focus:border-[#2CC295] focus:outline-none focus:ring-2 focus:ring-[#2CC295]/30"
+                  >
+                    <option value="todas">Todas as unidades</option>
+                    {units.map((unit) => (
+                      <option key={unit.id} value={unit.id}>{unit.shortName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <label className={`flex h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 text-sm font-semibold transition-colors ${
+                  onlyToday ? 'border-[#2CC295]/40 bg-[#2CC295]/10 text-[#03624C]' : 'border-[#D0DDD6] bg-white text-[#5F6A67]'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={onlyToday}
+                    onChange={(e) => setOnlyToday(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <span>Atende hoje</span>
+                  <span className={`relative h-5 w-9 rounded-full transition-colors ${onlyToday ? 'bg-[#2CC295]' : 'bg-[#D0DDD6]'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${onlyToday ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </span>
+                </label>
+
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#8A9390]">Especialidade</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[{ id: 'todos', name: 'Todos' }, ...specialties].map((s) => {
+                      const active = specialtyFilter === s.id
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSpecialtyFilter(s.id)}
+                          className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                            active ? 'border-[#03624C] bg-[#03624C] text-white' : 'border-[#D0DDD6] bg-white text-[#5F6A67]'
+                          }`}
+                        >
+                          {s.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-[#E8EDE9] bg-white p-4">
+                  <Button variant="outline" className="flex-1" onClick={clearFilters}>Limpar</Button>
+                  <Button className="flex-1" onClick={() => setFiltersOpen(false)}>Ver médicos</Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </AppShell>
   )
 }
